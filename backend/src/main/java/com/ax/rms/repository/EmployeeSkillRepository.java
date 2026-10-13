@@ -12,6 +12,12 @@ public interface EmployeeSkillRepository {
   /** 그 직원의 기술 줄을 전부 돌려준다. */
   List<EmployeeSkill> findByEmployeeId(long employeeId);
 
+  /** 모든 직원의 기술 줄을 전부 돌려준다. */
+  List<EmployeeSkill> findAll();
+
+  /** 그 직원의 기술 줄을 전부 지운다. */
+  void deleteByEmployeeId(long employeeId);
+
   /** 저장된 기술 줄 수를 돌려준다. */
   long count();
 }

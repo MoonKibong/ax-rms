@@ -3,6 +3,7 @@ package com.ax.rms.availability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ax.rms.domain.Assignment;
+import com.ax.rms.domain.AvailabilityStatus;
 import com.ax.rms.domain.Project;
 import com.ax.rms.domain.ProjectStatus;
 import java.time.LocalDate;
@@ -102,6 +103,50 @@ class AvailabilityCalculatorTest {
             calculator.periodAvailability(
                 List.of(m, n), LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 20)))
         .isEqualTo(10);
+  }
+
+  @Test
+  void unavailableWithAssignmentEndingAfterTodayNeedsReview() {
+    LocalDate today = LocalDate.of(2026, 6, 15);
+    Assignment future = assignment(1, today.minusDays(5), today.plusDays(16), 40);
+
+    assertThat(calculator.needsReview(AvailabilityStatus.UNAVAILABLE, List.of(future), today))
+        .isTrue();
+  }
+
+  @Test
+  void unavailableWithAssignmentEndingExactlyTodayNeedsReview() {
+    LocalDate today = LocalDate.of(2026, 6, 15);
+    Assignment endsToday = assignment(1, today.minusDays(10), today, 40);
+
+    assertThat(calculator.needsReview(AvailabilityStatus.UNAVAILABLE, List.of(endsToday), today))
+        .isTrue();
+  }
+
+  @Test
+  void unavailableWithAssignmentAlreadyEndedDoesNotNeedReview() {
+    LocalDate today = LocalDate.of(2026, 6, 15);
+    Assignment ended = assignment(1, today.minusDays(30), today.minusDays(14), 40);
+
+    assertThat(calculator.needsReview(AvailabilityStatus.UNAVAILABLE, List.of(ended), today))
+        .isFalse();
+  }
+
+  @Test
+  void unavailableWithNoAssignmentsDoesNotNeedReview() {
+    LocalDate today = LocalDate.of(2026, 6, 15);
+
+    assertThat(calculator.needsReview(AvailabilityStatus.UNAVAILABLE, List.of(), today))
+        .isFalse();
+  }
+
+  @Test
+  void availableWithFutureAssignmentDoesNotNeedReview() {
+    LocalDate today = LocalDate.of(2026, 6, 15);
+    Assignment future = assignment(1, today.minusDays(5), today.plusDays(200), 40);
+
+    assertThat(calculator.needsReview(AvailabilityStatus.AVAILABLE, List.of(future), today))
+        .isFalse();
   }
 
   private Assignment assignment(
