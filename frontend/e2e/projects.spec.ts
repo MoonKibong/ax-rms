@@ -106,7 +106,7 @@ for (const width of [1280, 360]) {
     ])
     expect(facts.required).toEqual(['2', '2', '2', '2', '2'])
     expect(facts.text).not.toContain('인력 부족')
-    expect(facts.text).not.toContain('프로젝트 등록')
+    // T#15 had no "프로젝트 등록" here; T#16 adds it for project managers (e2e/projects-detail.spec.ts checks it).
 
     // Status badges: the text and the BRIEF colours (D13).
     expect(facts.badges.map((badge) => badge.text)).toEqual(['진행 중', '완료', '진행 중', '계획', '보류'])
