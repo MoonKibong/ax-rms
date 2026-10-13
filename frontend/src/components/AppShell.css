@@ -20,6 +20,22 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* T#6 user area at the right end of the header: 로그아웃 at every width, the employee name from 1024px. */
+.shell__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  margin-left: auto;
+}
+
+.shell__user-name {
+  display: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
 .shell__nav {
   display: flex;
   height: 44px;
@@ -55,6 +71,22 @@
   max-width: var(--layout-content-max);
 }
 
+/* T#6: a shell action that failed (logout), drawn like the TextField error (BRIEF §3.1, §3.2). */
+.shell__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.shell__alert svg {
+  flex: none;
+  margin-top: 2px;
+}
+
 /* Wide (>=1024px): header across the top, 220px sidebar on the left. */
 @media (min-width: 1024px) {
   .shell {
@@ -71,6 +103,10 @@
   .shell__brand {
     font-size: var(--font-size-lg);
     line-height: var(--line-height-lg);
+  }
+
+  .shell__user-name {
+    display: inline;
   }
 
   .shell__nav {
