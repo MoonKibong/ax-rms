@@ -10,6 +10,8 @@ Working rules and project context: [AGENTS.md](AGENTS.md)
 - Maven은 전역 설치가 필요 없다 — `backend/mvnw`(Maven Wrapper, Maven 3.10.0)만 쓴다. 첫 실행 때 지정된 Maven 배포판을 `~/.m2/wrapper/`에 내려받는다.
 - Playwright 1.64.0 (`@playwright/test`, e2e 검사와 스크린샷) — Chromium headless shell을 쓴다.
 - 글꼴: Pretendard 1.3.9 (npm `pretendard`, OFL-1.1) — 앱 번들에 들어가며 외부 CDN을 쓰지 않는다.
+- 라우터: React Router 8.4.0 (npm `react-router`).
+- 인증: Spring Security 6.5.11 (`spring-boot-starter-security`, Spring Boot 3.5.16이 정하는 버전).
 
 ## 설치
 
@@ -41,11 +43,11 @@ scripts/nexi-isolated.sh --root "$PWD" --file DB_PATH=backend/data/app.db --set 
 npm --prefix frontend run dev
 ```
 
-브라우저에서 `http://localhost:5173`(Vite 기본 포트)을 열면 첫 화면(디자인 참조 화면)이 백엔드의 `/api/health`를 호출해 상태를 보여준다. 개발 서버는 `/api`를 `http://localhost:8080`으로 proxy한다(`frontend/vite.config.ts`의 `server.proxy`), 그래서 브라우저에서 보는 주소는 그대로 `/api/...`다.
+브라우저에서 `http://localhost:5173`(Vite 기본 포트)을 열면 로그인 화면이 먼저 나온다. 아래 데모 계정으로 로그인하면 관리자 역할이 있는 계정은 `/`(지금은 디자인 참조 화면, 백엔드 `/api/health` 상태 표시)로, 직원 역할만 있는 계정은 `/me`(내 정보)로 간다. 개발 서버는 `/api`를 `http://localhost:8080`으로 proxy한다(`frontend/vite.config.ts`의 `server.proxy`), 그래서 브라우저에서 보는 주소는 그대로 `/api/...`다.
 
 ## 데모 계정 (D31)
 
-빈 DB로 처음 실행하면 아래 4개 데모 계정이 시드로 들어간다(비밀번호는 BCrypt로 해시 저장, 평문은 데모 전용이다). 로그인 화면·API는 T#6에서 만들어지며, 지금은 데이터로만 존재한다.
+빈 DB로 처음 실행하면 아래 4개 데모 계정이 시드로 들어간다(비밀번호는 BCrypt로 해시 저장, 평문은 데모 전용이다). 로그인 화면(`/login`)에서 이 아이디와 비밀번호로 들어간다.
 
 | 아이디 | 비밀번호 | 역할 |
 |---|---|---|
@@ -53,6 +55,32 @@ npm --prefix frontend run dev
 | `project.manager` | `ProjectManager!1` | 직원, 프로젝트 관리자 |
 | `employee.demo` | `Employee!1` | 직원 |
 | `dual.manager` | `DualManager!1` | 직원, 인력 관리자, 프로젝트 관리자 (겸임) |
+
+## 인증과 권한 (D16, D9, D25)
+
+로그인은 서버 세션으로 유지한다. 세션 쿠키 `JSESSIONID`는 `HttpOnly`, `SameSite=Strict`, `Path=/`이다(로컬 http 시연이라 `Secure`는 두지 않는다). CSRF 토큰은 쓰지 않는다: `SameSite=Strict` 쿠키는 다른 사이트에서 온 요청에 붙지 않고, 로그인은 JSON만 받는다.
+
+| API | 응답 |
+|---|---|
+| `POST /api/auth/login` (`Content-Type: application/json`, `{"username", "password"}`) | 200 `{"username", "employeeId", "employeeName", "roles"}`. 틀린 비밀번호와 없는 계정은 같은 401 `AUTH_INVALID_CREDENTIALS`, 빈 값은 400 `AUTH_INVALID_REQUEST`, JSON이 아니면 415 `UNSUPPORTED_MEDIA_TYPE`. 이미 세션이 있었으면 세션 ID를 새로 발급한다. |
+| `GET /api/auth/me` | 로그인 중이면 200(로그인 응답과 같은 본문), 아니면 401 `AUTH_REQUIRED` |
+| `POST /api/auth/logout` | 204. 세션을 없앤다. |
+
+인증 API의 오류와 401·403·415 응답의 본문은 `{"code": "...", "message": "..."}`이다(D33). 로그인이 없으면 401 `AUTH_REQUIRED`, 권한이 없으면 403 `AUTH_FORBIDDEN`, JSON이 아닌 본문은 415 `UNSUPPORTED_MEDIA_TYPE`이다. 권한 단계를 지난 요청에 아직 처리기가 없으면(404 등) Spring 기본 오류 본문이 나간다. 이후 API 태스크는 자기 오류를 이 형식으로 답한다.
+
+모든 `/api` 요청의 권한은 `backend/src/main/java/com/ax/rms/security/ApiSecurityFilterChain.java` 한 곳에서 정한다. 표에 없는 요청은 막는다. 이후 API는 이 경로 아래에 두고, 새 경로가 필요하면 이 표를 함께 바꾼다.
+
+| 요청 | 비로그인 | 직원만 | 인력 관리자 | 프로젝트 관리자 | 겸임 |
+|---|---|---|---|---|---|
+| `GET /api/health`, `POST /api/auth/login` | 허용 | 허용 | 허용 | 허용 | 허용 |
+| `GET /api/auth/me`, `POST /api/auth/logout` | 401 | 허용 | 허용 | 허용 | 허용 |
+| `GET /api/me/**` (본인 데이터, 경로에 ID 없음) | 401 | 허용 | 허용 | 허용 | 허용 |
+| `GET /api/employees/**`, `/api/projects/**`, `/api/assignments/**`, `/api/dashboard/**` | 401 | 403 | 허용 | 허용 | 허용 |
+| `POST`·`PUT`·`PATCH`·`DELETE /api/employees/**` | 401 | 403 | 허용 | 403 | 허용 |
+| `POST`·`PUT`·`PATCH`·`DELETE /api/projects/**`, `/api/assignments/**` | 401 | 403 | 403 | 허용 | 허용 |
+| 그 밖의 모든 요청 | 401 | 403 | 403 | 403 | 403 |
+
+화면은 로그인하지 않으면 `/login`만 보인다. 직원 역할만 있는 계정은 내 정보(`/me`)만 보고, 다른 주소를 열면 `/me`로 간다.
 
 ## 검사
 
@@ -62,7 +90,7 @@ make test
 make lint
 ```
 
-`make test`는 백엔드 테스트, Vitest, 그리고 e2e 검사(`npm --prefix frontend run test:e2e`, Playwright)를 차례로 실행한다. e2e 검사는 아래 "e2e 서버"대로 자기 서버를 띄우고 내린다.
+`make test`는 백엔드 테스트, Vitest, 그리고 e2e 검사(`npm --prefix frontend run test:e2e`, Playwright)를 차례로 실행한다. e2e 검사는 아래 "e2e 서버"대로 자기 서버를 띄우고 내린다. 백엔드는 Tomcat이 뜬 뒤에 시드를 넣으므로, Playwright `globalSetup`(`frontend/e2e/global-setup.ts`)이 데모 계정 로그인이 될 때까지 최대 30초 기다린 뒤 검사를 시작한다. 로그인이 필요한 화면의 e2e·스크린샷은 `frontend/e2e/support/auth.ts`의 `loginAs`로 먼저 로그인한다.
 
 ## 스크린샷
 

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
+import { HR_MANAGER, loginAs } from '../support/auth'
 import { settle } from '../support/layout'
 
 // T#4 screens (contract "화면"): the reference screen at 1280px and 360px, full page.
@@ -7,6 +8,8 @@ const outDir = fileURLToPath(new URL('../../../docs/screens/T4/', import.meta.ur
 
 for (const width of [1280, 360]) {
   test(`reference-${width}`, async ({ page }) => {
+    // T#6: `/` needs a login now.
+    await loginAs(page, HR_MANAGER)
     await page.setViewportSize({ width, height: 800 })
     await page.goto('/')
     await settle(page)

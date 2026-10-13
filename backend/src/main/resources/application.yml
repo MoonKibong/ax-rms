@@ -5,3 +5,10 @@ spring:
   datasource:
     url: jdbc:sqlite:${DB_PATH:./data/app.db}?foreign_keys=on
     driver-class-name: org.sqlite.JDBC
+server:
+  servlet:
+    session:
+      cookie:
+        # T#6: the session cookie never goes with a request from another site, and scripts cannot read it.
+        http-only: true
+        same-site: strict
