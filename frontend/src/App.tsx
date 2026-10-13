@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import AppShell from './components/AppShell'
 import Button from './components/Button'
 import DataTable, { type Column } from './components/DataTable'
+import Gantt from './components/Gantt'
+import type { GanttAssignment } from './components/gantt/model'
 import StateMessage from './components/StateMessage'
 import TextField from './components/TextField'
 import './App.css'
@@ -35,6 +37,16 @@ const ROWS: SampleRow[] = [
   { id: '3', name: LONG_VALUE, department: '플랫폼팀', start: '2026-11-01', end: '2027-03-31', rate: '100%', available: '0%' },
   { id: '4', name: '박세나', department: '디자인팀', start: '2026-10-13', end: '2026-11-30', rate: '5%', available: '95%' },
 ]
+
+// Gantt sample (T#12): about a year, with 3-day bars, 3-day overlaps, a finished project and a 48-character name.
+const GANTT_NAME = 'ganttprojectnamewithoutanyspacesorhyphens0000048'
+const GANTT_SAMPLE: GanttAssignment[] = [
+  { id: 'a', projectName: '알파 프로젝트', projectStatus: '진행 중', start: '2026-01-05', end: '2026-12-18', rate: 50 },
+  { id: 'b', projectName: '베타 개편', projectStatus: '진행 중', start: '2026-03-02', end: '2026-03-04', rate: 30 },
+  { id: 'c', projectName: '감마 이관', projectStatus: '완료', start: '2026-06-15', end: '2026-07-10', rate: 30 },
+  { id: 'd', projectName: GANTT_NAME, projectStatus: '진행 중', start: '2026-06-30', end: '2026-07-02', rate: 20 },
+]
+const GANTT_TODAY = '2026-07-01'
 
 const noop = () => undefined
 
@@ -98,6 +110,13 @@ function App() {
             <StateMessage kind="no-results" onReset={noop} />
             <StateMessage kind="error" onRetry={noop} />
           </div>
+        </section>
+
+        <section className="reference__section" aria-labelledby="reference-gantt">
+          <h2 id="reference-gantt" className="reference__heading">
+            간트 차트
+          </h2>
+          <Gantt assignments={GANTT_SAMPLE} today={GANTT_TODAY} />
         </section>
       </div>
     </AppShell>
