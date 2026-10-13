@@ -50,7 +50,7 @@ class DemoAccountTest extends AbstractSeedTest {
   }
 
   private List<ReadmeRow> readDemoAccountTable() throws IOException {
-    List<String> lines = Files.readAllLines(Path.of("..", "README.md"));
+    List<String> lines = Files.readAllLines(findRepositoryReadme());
     List<ReadmeRow> rows = new ArrayList<>();
     boolean inSection = false;
     for (String line : lines) {
@@ -71,6 +71,27 @@ class DemoAccountTest extends AbstractSeedTest {
       }
     }
     return rows;
+  }
+
+  /**
+   * 저장소 루트의 {@code README.md}를 찾는다. 테스트의 작업 디렉터리가 {@code backend/}인지
+   * 저장소 루트인지(= 호출한 셸의 위치)에 매번 의존하지 않도록, 현재 위치부터 위로 올라가며 찾는다.
+   */
+  private Path findRepositoryReadme() throws IOException {
+    Path dir = Path.of("").toAbsolutePath();
+    for (int depth = 0; depth < 6; depth++) {
+      Path candidate = dir.resolve("README.md");
+      if (Files.isRegularFile(candidate)) {
+        return candidate;
+      }
+      Path parent = dir.getParent();
+      if (parent == null) {
+        break;
+      }
+      dir = parent;
+    }
+    throw new IOException(
+        "README.md를 찾지 못했다 (시작 위치: " + Path.of("").toAbsolutePath() + ")");
   }
 
   private Set<Role> parseRoles(String cell) {
