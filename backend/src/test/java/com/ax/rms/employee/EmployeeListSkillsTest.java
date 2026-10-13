@@ -66,7 +66,9 @@ class EmployeeListSkillsTest extends AbstractApiTest {
       ApiClient.Response detail = client.get("/api/employees/" + id);
       assertThat(detail.status()).isEqualTo(200);
       Map<String, Object> body = readMap(detail.body());
-      assertThat(item.get("skills")).as("%s skills", item.get("name")).isEqualTo(body.get("skills"));
+      assertThat(item.get("skills"))
+          .as("%s skills", item.get("name"))
+          .isEqualTo(body.get("skills"));
     }
   }
 

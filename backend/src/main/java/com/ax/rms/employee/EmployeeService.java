@@ -77,7 +77,8 @@ public class EmployeeService {
                 Collectors.groupingBy(
                     EmployeeSkill::employeeId,
                     Collectors.mapping(
-                        line -> new EmployeeSkillResponse(line.skillName(), line.proficiencyLevel()),
+                        line ->
+                            new EmployeeSkillResponse(line.skillName(), line.proficiencyLevel()),
                         Collectors.toList())));
 
     List<EmployeeListItemResponse> result = new ArrayList<>();
