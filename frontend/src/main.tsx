@@ -1,9 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router'
 import 'pretendard/dist/web/static/pretendard-dynamic-subset.css'
 import './styles/tokens.css'
 import './styles/base.css'
-import App from './App'
+import AppRoutes from './AppRoutes'
+import { AuthProvider } from './auth/AuthContext'
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {
@@ -12,6 +14,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )
