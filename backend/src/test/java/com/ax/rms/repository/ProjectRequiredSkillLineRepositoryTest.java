@@ -40,4 +40,37 @@ class ProjectRequiredSkillLineRepositoryTest extends AbstractDatabaseTest {
     assertThat(lines.get(0).proficiencyLevel()).isEqualTo(ProficiencyLevel.ADVANCED);
     assertThat(lines.get(0).headcount()).isEqualTo(2);
   }
+
+  @Test
+  void deleteByProjectIdRemovesOnlyThatProjectsLines() {
+    Project first = newProject("지울 프로젝트");
+    Project second = newProject("남길 프로젝트");
+    repository.insert(
+        new ProjectRequiredSkillLine(
+            null, first.id(), "백엔드 개발자", "Java", ProficiencyLevel.ADVANCED, 2));
+    repository.insert(
+        new ProjectRequiredSkillLine(
+            null, first.id(), "디자이너", "Figma", ProficiencyLevel.BEGINNER, 1));
+    repository.insert(
+        new ProjectRequiredSkillLine(
+            null, second.id(), "기획자", "기획", ProficiencyLevel.INTERMEDIATE, 3));
+
+    repository.deleteByProjectId(first.id());
+
+    assertThat(repository.findByProjectId(first.id())).isEmpty();
+    List<ProjectRequiredSkillLine> kept = repository.findByProjectId(second.id());
+    assertThat(kept).hasSize(1);
+    assertThat(kept.get(0).skillName()).isEqualTo("기획");
+  }
+
+  private Project newProject(String name) {
+    return projectRepository.insert(
+        new Project(
+            null,
+            name,
+            "설명",
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 12, 31),
+            ProjectStatus.PLANNED));
+  }
 }
