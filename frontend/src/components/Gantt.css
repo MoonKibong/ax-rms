@@ -1,0 +1,122 @@
+/* BRIEF §3.6 Gantt, §4 breakpoint 1024px, §5 long values. Colours are tokens only. */
+.gantt__chart {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.gantt__row {
+  display: flex;
+  flex-direction: column;
+}
+
+.gantt__head {
+  padding-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.gantt__head--muted {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+/* An empty head only keeps the track aligned on wide screens. */
+.gantt__head--empty {
+  display: none;
+}
+
+.gantt__track {
+  position: relative;
+  min-width: 0;
+  padding: var(--space-2) 0;
+}
+
+.gantt__track--axis {
+  height: calc(var(--line-height-xs) + var(--space-2) * 2);
+}
+
+.gantt__bar {
+  height: 20px;
+  min-width: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+}
+
+.gantt__bar[data-status='other'] {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-strong);
+}
+
+.gantt__band {
+  height: 8px;
+  min-width: 2px;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg);
+}
+
+.gantt__text,
+.gantt__axis-text {
+  z-index: 1;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--color-text);
+  /* On the chart surface, above the today line, so the line does not strike through the text. */
+  background: var(--color-surface);
+  white-space: normal;
+  text-overflow: clip;
+}
+
+.gantt__text {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  margin-top: var(--space-1);
+}
+
+.gantt__text--total {
+  color: var(--color-warning);
+}
+
+.gantt__axis-text {
+  position: absolute;
+  top: var(--space-2);
+  width: max-content;
+  color: var(--color-text-muted);
+}
+
+.gantt__axis-text--today {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+}
+
+.gantt__today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-danger);
+}
+
+@media (min-width: 1024px) {
+  .gantt__row {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    column-gap: var(--space-3);
+  }
+
+  .gantt__head {
+    padding-top: var(--space-2);
+  }
+
+  .gantt__head--empty {
+    display: block;
+  }
+}
