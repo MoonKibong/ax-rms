@@ -31,4 +31,20 @@ class ProjectRepositoryTest extends AbstractDatabaseTest {
     assertThat(found.endDate()).isEqualTo(LocalDate.of(2026, 12, 31));
     assertThat(found.status()).isEqualTo(ProjectStatus.IN_PROGRESS);
   }
+
+  @Test
+  void nullDescriptionIsPreservedAsNullNotAsEmptyString() {
+    Project inserted =
+        repository.insert(
+            new Project(
+                null,
+                "설명 없는 프로젝트",
+                null,
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 12, 31),
+                ProjectStatus.PLANNED));
+
+    Project found = repository.findById(inserted.id()).orElseThrow();
+    assertThat(found.description()).isNull();
+  }
 }

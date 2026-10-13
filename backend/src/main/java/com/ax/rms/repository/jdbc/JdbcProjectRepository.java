@@ -4,6 +4,7 @@ import com.ax.rms.domain.Project;
 import com.ax.rms.domain.ProjectStatus;
 import com.ax.rms.repository.ProjectRepository;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,16 +39,13 @@ public class JdbcProjectRepository implements ProjectRepository {
 
   @Override
   public Project insert(Project project) {
-    long id =
-        insert
-            .executeAndReturnKey(
-                Map.of(
-                    "name", project.name(),
-                    "description", project.description() == null ? "" : project.description(),
-                    "start_date", project.startDate().toString(),
-                    "end_date", project.endDate().toString(),
-                    "status", project.status().name()))
-            .longValue();
+    Map<String, Object> params = new HashMap<>();
+    params.put("name", project.name());
+    params.put("description", project.description());
+    params.put("start_date", project.startDate().toString());
+    params.put("end_date", project.endDate().toString());
+    params.put("status", project.status().name());
+    long id = insert.executeAndReturnKey(params).longValue();
     return new Project(
         id,
         project.name(),
