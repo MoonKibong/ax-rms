@@ -61,6 +61,17 @@ public class JdbcEmployeeSkillRepository implements EmployeeSkillRepository {
   }
 
   @Override
+  public List<EmployeeSkill> findAll() {
+    return jdbcTemplate.query(
+        "select id, employee_id, skill_name, proficiency_level from employee_skill", ROW_MAPPER);
+  }
+
+  @Override
+  public void deleteByEmployeeId(long employeeId) {
+    jdbcTemplate.update("delete from employee_skill where employee_id = ?", employeeId);
+  }
+
+  @Override
   public long count() {
     return jdbcTemplate.queryForObject("select count(*) from employee_skill", Long.class);
   }

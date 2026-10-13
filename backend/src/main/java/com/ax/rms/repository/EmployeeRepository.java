@@ -10,6 +10,9 @@ public interface EmployeeRepository {
   /** 직원을 저장하고, 생성된 id가 채워진 값을 돌려준다. */
   Employee insert(Employee employee);
 
+  /** 주어진 id의 직원을 {@code employee}의 값으로 갈아 쓴다. */
+  void update(Employee employee);
+
   /** 전체 직원을 돌려준다. */
   List<Employee> findAll();
 
