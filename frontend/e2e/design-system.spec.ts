@@ -44,6 +44,13 @@ for (const width of [1280, 1024, 1023, 360]) {
       expect(new Set(linkTops).size).toBe(1)
     }
 
+    // First column: card title weight 600 below 1024px, body weight 400 in the wide table (BRIEF §3.3).
+    const firstCellWeight = await page
+      .locator('tbody td:first-child')
+      .first()
+      .evaluate((cell) => getComputedStyle(cell).fontWeight)
+    expect(firstCellWeight, 'first column font-weight').toBe(width >= 1024 ? '400' : '600')
+
     const longCell = page.locator('td', { hasText: LONG_VALUE })
     expect(await longCell.count()).toBe(1)
     const fits = await longCell.evaluate((cell) => cell.scrollWidth <= cell.clientWidth)

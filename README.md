@@ -65,11 +65,12 @@ make screenshots T=<N>
 
 e2e 검사와 스크린샷은 `scripts/e2e-servers.sh -- <명령>`으로 실행한다. 이 스크립트는 다음 순서로 동작한다.
 
-1. 포트 `18080`(백엔드)과 `14173`(프런트엔드)이 비어 있는지 확인한다. 하나라도 쓰이고 있으면 `포트 <번호> 사용 중` 메시지를 내고 아무것도 띄우지 않은 채 실패한다. 그 포트를 쓰는 프로세스는 건드리지 않는다.
-2. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
-3. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
-4. `http://localhost:14173/api/health`가 응답할 때까지 최대 120초 기다린 뒤 명령을 실행한다.
-5. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다.
+1. `.nexi-tmp`와 그 안의 출력 파일(`e2e-servers.pids`, `e2e-backend.log`, `e2e-preview.log`)이 심볼릭 링크이거나 일반 파일·폴더가 아니거나 저장소 밖을 가리키면 `출력 경로 거부` 메시지를 내고 아무것도 쓰거나 띄우지 않은 채 실패한다(exit 2).
+2. 포트 `18080`(백엔드)과 `14173`(프런트엔드)이 비어 있는지 확인한다. 하나라도 쓰이고 있으면 `포트 <번호> 사용 중` 메시지를 내고 아무것도 띄우지 않은 채 실패한다. 그 포트를 쓰는 프로세스는 건드리지 않는다.
+3. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
+4. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
+5. `http://localhost:14173/api/health`가 응답할 때까지 기다린 뒤 명령을 실행한다. 전체 대기는 최대 120초다. 요청마다 그 마감 시각에 끊으므로, 연결만 받고 응답하지 않는 서버가 있어도 120초를 넘지 않는다. 시간을 넘기면 이번 실행이 띄운 서버를 내리고 실패한다.
+6. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다.
 
 서버 로그는 `.nexi-tmp/e2e-backend.log`, `.nexi-tmp/e2e-preview.log`에 남는다.
 
