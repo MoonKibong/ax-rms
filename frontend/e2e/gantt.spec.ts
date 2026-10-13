@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { HR_MANAGER, loginAs } from './support/auth'
 import { expectNoHorizontalOverflow, settle } from './support/layout'
 
 // T#12: the Gantt section of the reference screen (constants in App.tsx). Colours are the BRIEF §2 tokens as rgb().
@@ -11,6 +12,8 @@ const WARNING = 'rgb(143, 83, 0)'
 const WARNING_BG = 'rgb(253, 241, 220)'
 
 async function open(page: Page, width: number): Promise<void> {
+  // T#6: `/` needs a login now; a manager account sees the reference screen.
+  await loginAs(page, HR_MANAGER)
   await page.setViewportSize({ width, height: 800 })
   await page.goto('/')
   await settle(page)
