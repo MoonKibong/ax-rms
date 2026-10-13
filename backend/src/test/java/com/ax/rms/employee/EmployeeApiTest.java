@@ -160,6 +160,7 @@ class EmployeeApiTest extends AbstractApiTest {
     assertThat(response.status()).isEqualTo(201);
     EmployeeDetailResponse body =
         objectMapper.readValue(response.body(), EmployeeDetailResponse.class);
+    assertThat(response.headers("Location")).containsExactly("/api/employees/" + body.id());
     assertThat(body.availabilityStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
     assertThat(body.name()).isEqualTo("신규직원");
 
