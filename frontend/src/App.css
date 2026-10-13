@@ -1,0 +1,55 @@
+/* Reference screen layout (BRIEF §6.0) */
+.reference {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.reference__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.reference__title {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.reference__status {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.reference__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.reference__heading {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.reference__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.reference__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+  max-width: 640px;
+}
+
+.reference__states {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}

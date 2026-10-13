@@ -34,3 +34,7 @@ coverage/
 .nini/
 .pipi/
 .pepe/
+
+# Playwright output
+test-results/
+playwright-report/
