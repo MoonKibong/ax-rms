@@ -76,6 +76,15 @@ public class JdbcAssignmentRepository implements AssignmentRepository {
   }
 
   @Override
+  public List<Assignment> findByProjectId(long projectId) {
+    return jdbcTemplate.query(
+        "select id, employee_id, project_id, start_date, end_date, allocation_percent "
+            + "from assignment where project_id = ? order by id",
+        ROW_MAPPER,
+        projectId);
+  }
+
+  @Override
   public Optional<Assignment> findById(long id) {
     return jdbcTemplate
         .query(

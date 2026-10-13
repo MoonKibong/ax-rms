@@ -90,7 +90,7 @@ public final class ApiClient {
           sessionId = value.isEmpty() ? null : value;
         }
       }
-      return new Response(response.statusCode(), response.body(), setCookies);
+      return new Response(response.statusCode(), response.body(), setCookies, response.headers());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (InterruptedException e) {
@@ -100,7 +100,13 @@ public final class ApiClient {
   }
 
   /** 응답 하나. */
-  public record Response(int status, String body, List<String> setCookies) {
+  public record Response(
+      int status, String body, List<String> setCookies, java.net.http.HttpHeaders httpHeaders) {
+
+    /** 그 이름의 응답 헤더 값을 모두 돌려준다(이름은 대소문자를 가리지 않는다). 없으면 빈 목록이다. */
+    public List<String> headers(String name) {
+      return httpHeaders.allValues(name);
+    }
 
     /** 본문을 JSON으로 읽는다. 본문이 없거나 JSON이 아니면 빈 노드를 돌려준다. */
     public JsonNode json() {

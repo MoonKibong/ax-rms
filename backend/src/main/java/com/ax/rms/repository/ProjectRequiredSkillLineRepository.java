@@ -12,6 +12,9 @@ public interface ProjectRequiredSkillLineRepository {
   /** 그 프로젝트의 필요 역량 줄을 전부 돌려준다. */
   List<ProjectRequiredSkillLine> findByProjectId(long projectId);
 
+  /** 그 프로젝트의 필요 역량 줄을 모두 지운다. */
+  void deleteByProjectId(long projectId);
+
   /** 저장된 필요 역량 줄 수를 돌려준다. */
   long count();
 }

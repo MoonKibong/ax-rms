@@ -6,6 +6,7 @@ import StateMessage from './components/StateMessage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
 // T#6 contract "화면과 라우팅" (D16, D25). Nothing protected is drawn until GET /api/auth/me has answered.
@@ -60,7 +61,7 @@ function AppRoutes() {
         path="/projects"
         element={
           <ManagerOnly user={user}>
-            <PlaceholderPage current="projects" title="프로젝트" />
+            <ProjectListPage />
           </ManagerOnly>
         }
       />

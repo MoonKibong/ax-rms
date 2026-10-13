@@ -16,6 +16,9 @@ public interface AssignmentRepository {
   /** 그 직원의 배치를 전부 돌려준다. */
   List<Assignment> findByEmployeeId(long employeeId);
 
+  /** 그 프로젝트의 배치를 전부 돌려준다. */
+  List<Assignment> findByProjectId(long projectId);
+
   /** 주어진 id로 배치를 찾는다. */
   Optional<Assignment> findById(long id);
 

@@ -66,6 +66,21 @@ public class JdbcEmployeeRepository implements EmployeeRepository {
   }
 
   @Override
+  public void update(Employee employee) {
+    jdbcTemplate.update(
+        "update employee set name = ?, department_id = ?, job_title = ?, career_years = ?, "
+            + "availability_status = ?, unavailable_reason = ?, unavailable_until = ? where id = ?",
+        employee.name(),
+        employee.departmentId(),
+        employee.jobTitle(),
+        employee.careerYears(),
+        employee.availabilityStatus().name(),
+        employee.unavailableReason(),
+        employee.unavailableUntil() == null ? null : employee.unavailableUntil().toString(),
+        employee.id());
+  }
+
+  @Override
   public List<Employee> findAll() {
     return jdbcTemplate.query(
         "select id, name, department_id, job_title, career_years, availability_status, "

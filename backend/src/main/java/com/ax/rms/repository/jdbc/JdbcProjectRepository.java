@@ -56,6 +56,21 @@ public class JdbcProjectRepository implements ProjectRepository {
   }
 
   @Override
+  public boolean update(Project project) {
+    int rows =
+        jdbcTemplate.update(
+            "update project set name = ?, description = ?, start_date = ?, end_date = ?, "
+                + "status = ? where id = ?",
+            project.name(),
+            project.description(),
+            project.startDate().toString(),
+            project.endDate().toString(),
+            project.status().name(),
+            project.id());
+    return rows > 0;
+  }
+
+  @Override
   public List<Project> findAll() {
     return jdbcTemplate.query(
         "select id, name, description, start_date, end_date, status from project order by id",

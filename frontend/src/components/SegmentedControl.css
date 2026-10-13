@@ -1,0 +1,53 @@
+/* T#15 contract "SegmentedControl 값": one line, 40px high, equal buttons, chosen one in the primary colour. */
+.segmented {
+  display: flex;
+  width: 100%;
+  height: var(--control-height);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.segmented__item {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-left: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms;
+}
+
+.segmented__item:first-child {
+  border-left: 0;
+  border-top-left-radius: calc(var(--radius-sm) - 1px);
+  border-bottom-left-radius: calc(var(--radius-sm) - 1px);
+}
+
+.segmented__item:last-child {
+  border-top-right-radius: calc(var(--radius-sm) - 1px);
+  border-bottom-right-radius: calc(var(--radius-sm) - 1px);
+}
+
+.segmented__item:hover {
+  background: var(--color-surface-subtle);
+}
+
+.segmented__item[aria-pressed='true'],
+.segmented__item[aria-pressed='true']:hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+@media (min-width: 1024px) {
+  .segmented {
+    max-width: 480px;
+  }
+}

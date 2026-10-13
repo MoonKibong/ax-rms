@@ -5,6 +5,8 @@ export type Column<Row> = {
   key: keyof Row & string
   header: string
   align?: 'start' | 'end'
+  // Draws the cell itself (a link, a badge). Without it the value is shown as text.
+  render?: (row: Row) => ReactNode
 }
 
 type DataTableProps<Row> = {
@@ -38,7 +40,7 @@ function DataTable<Row>({ columns, rows, rowKey, empty }: DataTableProps<Row>) {
             <tr key={rowKey(row)}>
               {columns.map((column) => (
                 <td key={column.key} data-align={column.align ?? 'start'} data-label={column.header}>
-                  {String(row[column.key] ?? '')}
+                  {column.render ? column.render(row) : String(row[column.key] ?? '')}
                 </td>
               ))}
             </tr>
