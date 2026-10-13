@@ -30,7 +30,8 @@ class ApplicationStartupTest {
       statement.execute("select 1");
     }
 
-    String path = datasourceUrl.substring(JDBC_SQLITE_PREFIX.length());
+    String pathAndQuery = datasourceUrl.substring(JDBC_SQLITE_PREFIX.length());
+    String path = pathAndQuery.split("\\?", 2)[0];
     assertThat(new File(path)).exists();
   }
 }

@@ -43,6 +43,17 @@ npm --prefix frontend run dev
 
 브라우저에서 `http://localhost:5173`(Vite 기본 포트)을 열면 첫 화면(디자인 참조 화면)이 백엔드의 `/api/health`를 호출해 상태를 보여준다. 개발 서버는 `/api`를 `http://localhost:8080`으로 proxy한다(`frontend/vite.config.ts`의 `server.proxy`), 그래서 브라우저에서 보는 주소는 그대로 `/api/...`다.
 
+## 데모 계정 (D31)
+
+빈 DB로 처음 실행하면 아래 4개 데모 계정이 시드로 들어간다(비밀번호는 BCrypt로 해시 저장, 평문은 데모 전용이다). 로그인 화면·API는 T#6에서 만들어지며, 지금은 데이터로만 존재한다.
+
+| 아이디 | 비밀번호 | 역할 |
+|---|---|---|
+| `hr.manager` | `HrManager!1` | 직원, 인력 관리자 |
+| `project.manager` | `ProjectManager!1` | 직원, 프로젝트 관리자 |
+| `employee.demo` | `Employee!1` | 직원 |
+| `dual.manager` | `DualManager!1` | 직원, 인력 관리자, 프로젝트 관리자 (겸임) |
+
 ## 검사
 
 ```
