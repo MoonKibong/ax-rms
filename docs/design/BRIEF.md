@@ -1,4 +1,4 @@
-상태: 초안
+상태: 승인
 
 # 디자인 기준 — Workforce Planner (ax-rms)
 
