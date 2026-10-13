@@ -1,0 +1,134 @@
+/* BRIEF §3.3. Narrow (<1024px) first: one card per row. */
+.data-table__table,
+.data-table__table tbody,
+.data-table__table tr,
+.data-table__table td {
+  display: block;
+}
+
+.data-table__table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.data-table__table tbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.data-table__table tr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.data-table__table td {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.data-table__table td::before {
+  content: attr(data-label);
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.data-table__table td:first-child {
+  display: block;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.data-table__table td:first-child::before {
+  content: none;
+}
+
+.data-table__table td[data-align='end'] {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wide (>=1024px): a real table. */
+@media (min-width: 1024px) {
+  .data-table {
+    overflow: hidden;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .data-table__table {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table__table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    display: table-header-group;
+  }
+
+  .data-table__table tbody {
+    display: table-row-group;
+  }
+
+  .data-table__table tr {
+    display: table-row;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .data-table__table th,
+  .data-table__table td,
+  .data-table__table td:first-child {
+    display: table-cell;
+    height: var(--row-min-height);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    text-align: start;
+    vertical-align: middle;
+  }
+
+  .data-table__table th {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .data-table__table td,
+  .data-table__table td:first-child {
+    border-top: 1px solid var(--color-border);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .data-table__table td::before {
+    content: none;
+  }
+
+  .data-table__table th[data-align='end'],
+  .data-table__table td[data-align='end'] {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+}

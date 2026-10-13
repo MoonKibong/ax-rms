@@ -1,0 +1,64 @@
+/* Design tokens: docs/design/BRIEF.md §2. The only place colour and shadow values are written. */
+:root {
+  --color-bg: #F6F7F9;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #EEF1F5;
+  --color-text: #1A1F27;
+  --color-text-muted: #55606E;
+  --color-primary: #2952CC;
+  --color-primary-hover: #1F42A8;
+  --color-on-primary: #FFFFFF;
+  --color-success: #1B7340;
+  --color-success-bg: #E7F4EC;
+  --color-warning: #8F5300;
+  --color-warning-bg: #FDF1DC;
+  --color-danger: #BF2B1B;
+  --color-danger-hover: #9E2215;
+  --color-danger-bg: #FCEBE8;
+  --color-border: #DDE2E8;
+  --color-border-strong: #7D8796;
+  --color-focus: #2952CC;
+  --color-disabled-bg: #E6E9EE;
+  --color-disabled-text: #8B94A1;
+
+  --font-family-base: "Pretendard", system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-size-xs: 12px;
+  --line-height-xs: 16px;
+  --font-size-sm: 14px;
+  --line-height-sm: 20px;
+  --font-size-md: 16px;
+  --line-height-md: 24px;
+  --font-size-lg: 18px;
+  --line-height-lg: 26px;
+  --font-size-xl: 22px;
+  --line-height-xl: 30px;
+  --font-size-2xl: 28px;
+  --line-height-2xl: 36px;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 999px;
+  --shadow-sm: 0 1px 2px rgba(26, 31, 39, 0.06);
+  --shadow-md: 0 4px 12px rgba(26, 31, 39, 0.12);
+
+  --control-height: 40px;
+  --row-min-height: 44px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --layout-header-height: 56px;
+  --layout-sidebar-width: 220px;
+  --layout-content-max: 1200px;
+  --layout-gutter-wide: 32px;
+  --layout-gutter-narrow: 16px;
+}
