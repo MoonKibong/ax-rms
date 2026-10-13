@@ -1,5 +1,7 @@
 package com.ax.rms.web;
 
+import com.ax.rms.assignment.AssignmentNotFoundException;
+import com.ax.rms.assignment.AssignmentRuleException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -20,5 +22,17 @@ public class ApiErrorHandler {
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
   public ResponseEntity<ApiError> unsupportedMediaType() {
     return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(UNSUPPORTED_MEDIA_TYPE);
+  }
+
+  /** 배치 업무 규칙 위반(D8·D14·D27·D28)은 400으로 답한다. */
+  @ExceptionHandler(AssignmentRuleException.class)
+  public ResponseEntity<ApiError> ruleViolation(AssignmentRuleException e) {
+    return ResponseEntity.badRequest().body(new ApiError(e.code(), e.getMessage()));
+  }
+
+  /** 배치 API에서 없는 리소스는 404로 답한다. */
+  @ExceptionHandler(AssignmentNotFoundException.class)
+  public ResponseEntity<ApiError> notFound(AssignmentNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.code(), e.getMessage()));
   }
 }

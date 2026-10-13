@@ -5,6 +5,7 @@ import com.ax.rms.repository.AssignmentRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -72,6 +73,33 @@ public class JdbcAssignmentRepository implements AssignmentRepository {
             + "from assignment where employee_id = ?",
         ROW_MAPPER,
         employeeId);
+  }
+
+  @Override
+  public Optional<Assignment> findById(long id) {
+    return jdbcTemplate
+        .query(
+            "select id, employee_id, project_id, start_date, end_date, allocation_percent "
+                + "from assignment where id = ?",
+            ROW_MAPPER,
+            id)
+        .stream()
+        .findFirst();
+  }
+
+  @Override
+  public void update(Assignment assignment) {
+    jdbcTemplate.update(
+        "update assignment set start_date = ?, end_date = ?, allocation_percent = ? where id = ?",
+        assignment.startDate().toString(),
+        assignment.endDate().toString(),
+        assignment.allocationPercent(),
+        assignment.id());
+  }
+
+  @Override
+  public void delete(long id) {
+    jdbcTemplate.update("delete from assignment where id = ?", id);
   }
 
   @Override
