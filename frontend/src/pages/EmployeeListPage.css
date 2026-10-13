@@ -1,0 +1,63 @@
+/* T#13 employee list (BRIEF §6.3): title, name search, the four filters, the count, then the table (cards below
+   1024px). Below 1024px the filters fold behind the 필터 button; from 1024px up they are one row of four. */
+.employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.employee-list__search {
+  max-width: 400px;
+}
+
+.employee-list .employee-list__toggle {
+  align-self: flex-start;
+}
+
+.employee-list__filters {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.employee-list__filters[data-open] {
+  display: flex;
+}
+
+.employee-list__count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.employee-list__none {
+  color: var(--color-text-muted);
+}
+
+/* BRIEF §3.3 loading: the spinner and "불러오는 중…" in the middle of the table's place. */
+.employee-list__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.employee-list__loading-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+@media (min-width: 1024px) {
+  .employee-list .employee-list__toggle {
+    display: none;
+  }
+
+  .employee-list__filters,
+  .employee-list__filters[data-open] {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
