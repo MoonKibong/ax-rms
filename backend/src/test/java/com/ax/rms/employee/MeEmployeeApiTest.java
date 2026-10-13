@@ -41,7 +41,9 @@ class MeEmployeeApiTest extends AbstractApiTest {
           assertThat(me.status()).as("%s status", username).isEqualTo(200);
           assertThat(me.json().get("name").asText()).as("%s name", username).isEqualTo(value[1]);
           long sessionEmployeeId = client.get("/api/auth/me").json().get("employeeId").asLong();
-          assertThat(me.json().get("id").asLong()).as("%s id", username).isEqualTo(sessionEmployeeId);
+          assertThat(me.json().get("id").asLong())
+              .as("%s id", username)
+              .isEqualTo(sessionEmployeeId);
         });
   }
 
@@ -99,7 +101,7 @@ class MeEmployeeApiTest extends AbstractApiTest {
 
   @Test
   @Order(5)
-  void aStatusChangeShowsOnTheNextCall() throws Exception {
+  void statusChangeShowsOnTheNextCall() throws Exception {
     ApiClient employee = loggedIn("employee.demo");
     long id = employee.get("/api/auth/me").json().get("employeeId").asLong();
 
