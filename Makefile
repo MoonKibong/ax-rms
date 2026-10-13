@@ -1,13 +1,16 @@
 .PHONY: build test lint screenshots
 
 build:
-	@echo "build: not set up yet"; exit 1
+	./backend/mvnw -f backend/pom.xml package
+	npm --prefix frontend run build
 
 test:
-	@echo "test: not set up yet"; exit 1
+	./backend/mvnw -f backend/pom.xml test
+	npm --prefix frontend run test
 
 lint:
-	@echo "lint: not set up yet"; exit 1
+	./backend/mvnw -f backend/pom.xml checkstyle:check
+	npm --prefix frontend run lint
 
 screenshots:
 	@echo "screenshots: not set up yet (T=$(T))"; exit 1
