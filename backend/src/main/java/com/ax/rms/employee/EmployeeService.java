@@ -244,7 +244,8 @@ public class EmployeeService {
         currentAvailability,
         needsReview,
         skills,
-        assignmentResponses);
+        assignmentResponses,
+        today);
   }
 
   private void validateUpsert(EmployeeUpsertRequest request) {

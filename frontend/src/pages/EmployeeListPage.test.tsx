@@ -124,7 +124,7 @@ describe('EmployeeListPage', () => {
   })
 
   // Criterion 4.
-  it('lists the employees as the API returned them, once, with plain names, badges, skills and the rate format', async () => {
+  it('lists the employees as the API returned them, once, with names that link to the detail, badges, skills and the rate format', async () => {
     const fetchMock = stubFetch(() => reply(200, ALL))
 
     await renderAt('/employees')
@@ -151,8 +151,16 @@ describe('EmployeeListPage', () => {
     expect(within(rows[0]).getByText('투입 가능')).toHaveAttribute('data-status', 'AVAILABLE')
     expect(within(rows[1]).getByText('투입 불가')).toHaveAttribute('data-status', 'UNAVAILABLE')
     expect(within(rows[1]).getByText('확인 필요')).toHaveAttribute('data-status', 'NEEDS_REVIEW')
-    expect(within(screen.getByRole('table')).queryAllByRole('link')).toEqual([])
-    expect(document.querySelectorAll('table a')).toHaveLength(0)
+    // T#38 criterion 6 (was "no link" in T#13, which handed the detail link to the detail task): each name links to
+    // the employee's detail, and the names are the only links in the table.
+    const links = within(screen.getByRole('table')).getAllByRole('link')
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['박소영', '/employees/1'],
+      ['최동훈', '/employees/2'],
+      ['이수민', '/employees/3'],
+      ['오승현', '/employees/6'],
+    ])
+    expect(document.querySelectorAll('table a')).toHaveLength(rows.length)
     expect(screen.getByText('4명')).toBeInTheDocument()
   })
 

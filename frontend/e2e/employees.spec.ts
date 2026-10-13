@@ -57,7 +57,7 @@ function optionTexts(page: Page, label: string): Promise<string[]> {
 }
 
 test.describe('the real seed (criterion 9)', () => {
-  test('the rows are the API answer, names are plain text, and the choices come from the unfiltered answer', async ({
+  test('the rows are the API answer, names link to the detail, and the choices come from the unfiltered answer', async ({
     page,
   }) => {
     await loginAs(page, HR_MANAGER)
@@ -68,7 +68,13 @@ test.describe('the real seed (criterion 9)', () => {
     expect(await rowsOf(page)).toEqual(expectedRows(all))
     await expect(page.getByText(`${all.length}명`, { exact: true })).toBeVisible()
     expect(all.map((employee) => employee.name)).toEqual(expect.arrayContaining(['박소영', '최동훈', '서하윤']))
-    expect(await page.locator('tbody a').count(), 'links in the table').toBe(0)
+    // T#38 criterion 6 (was "no link" in T#13, which handed the detail link to the detail task): each name links to
+    // the employee's detail, in the API's order.
+    const links = page.locator('tbody a')
+    expect(await links.count(), 'links in the table').toBe(all.length)
+    expect(await links.evaluateAll((anchors) => anchors.map((a) => [a.textContent, a.getAttribute('href')]))).toEqual(
+      all.map((employee) => [employee.name, `/employees/${employee.id}`]),
+    )
 
     const skills = [...new Set(all.flatMap((employee) => employee.skills.map((skill) => skill.skillName)))].sort(
       (a, b) => a.localeCompare(b, 'ko'),

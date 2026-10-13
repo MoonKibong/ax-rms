@@ -1,0 +1,114 @@
+/* T#38 employee detail and 내 정보 (BRIEF §6.4): the head, then the sections 기본 정보, 기술 and 배치 현황, one column at
+   every width. Section titles and the gap between sections follow BRIEF §6.0. */
+.employee-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.employee-detail__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.employee-detail__name {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.employee-detail__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.employee-detail__availability {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.employee-detail__availability-value {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.employee-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.employee-detail__section-title {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.employee-detail__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.employee-detail__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.employee-detail__row dt {
+  flex: none;
+  width: 120px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.employee-detail__row dd {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.employee-detail__skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employee-detail__none {
+  color: var(--color-text-muted);
+}
+
+/* BRIEF §3.3 loading: the spinner and "불러오는 중…" in the middle of the content's place. */
+.employee-detail__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.employee-detail__loading-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+/* 내 정보: the T#6 title above the detail. */
+.me-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
