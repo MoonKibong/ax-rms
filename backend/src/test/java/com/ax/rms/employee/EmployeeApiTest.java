@@ -9,40 +9,43 @@ import com.ax.rms.domain.ProjectStatus;
 import com.ax.rms.repository.AssignmentRepository;
 import com.ax.rms.repository.DepartmentRepository;
 import com.ax.rms.repository.EmployeeRepository;
-import com.ax.rms.support.AbstractSeedTest;
+import com.ax.rms.support.AbstractApiTest;
+import com.ax.rms.support.ApiClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 /**
- * 직원 API를 실제 포트로 검사한다(D2, D6, D7, D15, D18, D19, D21, D33). 시드는 {@link AbstractSeedTest}가
- * 쓰는 고정 "오늘"(2026-06-15)과 T#5의 시드 데이터다. 뒤쪽 테스트(등록·수정·상태 변경)는 앞쪽 테스트(목록·상세
- * 필터)가 세는 건수와 겹치지 않도록, 그리고 서로의 상태를 건드리지 않도록 {@link Order}로 순서를 고정한다.
+ * 직원 API를 실제 포트로 검사한다(D2, D6, D7, D15, D18, D19, D21, D33). 시드는 {@link
+ * com.ax.rms.support.AbstractSeedTest}가 쓰는 고정 "오늘"(2026-06-15)과 T#5의 시드 데이터다. 권한은 #6의
+ * 보안 설정이 적용되므로(이슈 #8 PM 결정), 모든 요청을 쓰기까지 할 수 있는 {@code hr.manager}로 로그인해
+ * 보낸다 — 역할별 403은 이 테스트의 몫이 아니라 #6의 {@code AuthorizationPolicyTest}가 맡는다. 뒤쪽
+ * 테스트(등록·수정·상태 변경)는 앞쪽 테스트(목록·상세 필터)가 세는 건수와 겹치지 않도록, 그리고 서로의 상태를
+ * 건드리지 않도록 {@link Order}로 순서를 고정한다.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class EmployeeApiTest extends AbstractSeedTest {
+class EmployeeApiTest extends AbstractApiTest {
 
-  @LocalServerPort private int port;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private EmployeeRepository employeeRepository;
   @Autowired private DepartmentRepository departmentRepository;
   @Autowired private AssignmentRepository assignmentRepository;
 
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  private ApiClient client;
+
+  @BeforeEach
+  void loginAsHrManager() {
+    client = client();
+    client.login("hr.manager", "HrManager!1");
+  }
 
   @Test
   @Order(1)
@@ -127,18 +130,18 @@ class EmployeeApiTest extends AbstractSeedTest {
   void missingEmployeeReturns404ForDetailUpdateAndStatusChange() throws Exception {
     long missing = 999_999L;
 
-    HttpResponse<String> detailResponse = send("GET", "/api/employees/" + missing, null);
+    ApiClient.Response detailResponse = client.get("/api/employees/" + missing);
     assertNotFound(detailResponse);
 
-    HttpResponse<String> updateResponse =
-        send(
+    ApiClient.Response updateResponse =
+        sendJson(
             "PUT",
             "/api/employees/" + missing,
             new EmployeeUpsertRequest("x", departmentIdByName("개발팀"), "y", 1, List.of()));
     assertNotFound(updateResponse);
 
-    HttpResponse<String> statusResponse =
-        send(
+    ApiClient.Response statusResponse =
+        sendJson(
             "PATCH",
             "/api/employees/" + missing + "/status",
             new EmployeeStatusChangeRequest("AVAILABLE", null, null));
@@ -153,9 +156,8 @@ class EmployeeApiTest extends AbstractSeedTest {
         new EmployeeUpsertRequest(
             "신규직원", devId, "백엔드 개발자", 1, List.of(new EmployeeSkillRequest("Go", "BEGINNER")));
 
-    HttpResponse<String> response = send("POST", "/api/employees", request);
-    assertThat(response.statusCode()).isEqualTo(201);
-    assertThat(response.headers().firstValue("Location")).isPresent();
+    ApiClient.Response response = sendJson("POST", "/api/employees", request);
+    assertThat(response.status()).isEqualTo(201);
     EmployeeDetailResponse body =
         objectMapper.readValue(response.body(), EmployeeDetailResponse.class);
     assertThat(body.availabilityStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
@@ -210,8 +212,8 @@ class EmployeeApiTest extends AbstractSeedTest {
             + "{\"skillName\":\"Kubernetes\",\"proficiencyLevel\":\"BEGINNER\"}],"
             + "\"availabilityStatus\":\"UNAVAILABLE\"}";
 
-    HttpResponse<String> response = send("PUT", "/api/employees/" + id, rawBody);
-    assertThat(response.statusCode()).isEqualTo(200);
+    ApiClient.Response response = client.sendJson("PUT", "/api/employees/" + id, rawBody);
+    assertThat(response.status()).isEqualTo(200);
     EmployeeDetailResponse body =
         objectMapper.readValue(response.body(), EmployeeDetailResponse.class);
     assertThat(body.careerYears()).isEqualTo(11);
@@ -231,12 +233,12 @@ class EmployeeApiTest extends AbstractSeedTest {
     List<Assignment> before = assignmentRepository.findByEmployeeId(id);
     assertThat(before).hasSize(2);
 
-    HttpResponse<String> response =
-        send(
+    ApiClient.Response response =
+        sendJson(
             "PATCH",
             "/api/employees/" + id + "/status",
             new EmployeeStatusChangeRequest("UNAVAILABLE", "병가", LocalDate.of(2026, 7, 1)));
-    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.status()).isEqualTo(200);
     EmployeeDetailResponse body =
         objectMapper.readValue(response.body(), EmployeeDetailResponse.class);
     assertThat(body.availabilityStatus()).isEqualTo(AvailabilityStatus.UNAVAILABLE);
@@ -252,35 +254,35 @@ class EmployeeApiTest extends AbstractSeedTest {
   void statusChangeValidationAndResetOnAvailable() throws Exception {
     long id = employeeIdByName("정하늘");
 
-    HttpResponse<String> missingReason =
-        send(
+    ApiClient.Response missingReason =
+        sendJson(
             "PATCH",
             "/api/employees/" + id + "/status",
             new EmployeeStatusChangeRequest("UNAVAILABLE", null, null));
-    assertThat(missingReason.statusCode()).isEqualTo(400);
+    assertThat(missingReason.status()).isEqualTo(400);
     assertThat(readMap(missingReason)).containsEntry("code", "EMPLOYEE_REASON_REQUIRED");
 
-    HttpResponse<String> invalidStatus =
-        send(
+    ApiClient.Response invalidStatus =
+        sendJson(
             "PATCH",
             "/api/employees/" + id + "/status",
             new EmployeeStatusChangeRequest("RETIRED", null, null));
-    assertThat(invalidStatus.statusCode()).isEqualTo(400);
+    assertThat(invalidStatus.status()).isEqualTo(400);
     assertThat(readMap(invalidStatus)).containsEntry("code", "EMPLOYEE_STATUS_INVALID");
 
-    HttpResponse<String> toUnavailable =
-        send(
+    ApiClient.Response toUnavailable =
+        sendJson(
             "PATCH",
             "/api/employees/" + id + "/status",
             new EmployeeStatusChangeRequest("UNAVAILABLE", "교육 파견", LocalDate.of(2026, 9, 1)));
-    assertThat(toUnavailable.statusCode()).isEqualTo(200);
+    assertThat(toUnavailable.status()).isEqualTo(200);
 
-    HttpResponse<String> backToAvailable =
-        send(
+    ApiClient.Response backToAvailable =
+        sendJson(
             "PATCH",
             "/api/employees/" + id + "/status",
             new EmployeeStatusChangeRequest("AVAILABLE", null, null));
-    assertThat(backToAvailable.statusCode()).isEqualTo(200);
+    assertThat(backToAvailable.status()).isEqualTo(200);
     EmployeeDetailResponse body =
         objectMapper.readValue(backToAvailable.body(), EmployeeDetailResponse.class);
     assertThat(body.availabilityStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
@@ -288,8 +290,8 @@ class EmployeeApiTest extends AbstractSeedTest {
     assertThat(body.unavailableUntil()).isNull();
   }
 
-  private void assertNotFound(HttpResponse<String> response) throws Exception {
-    assertThat(response.statusCode()).isEqualTo(404);
+  private void assertNotFound(ApiClient.Response response) throws Exception {
+    assertThat(response.status()).isEqualTo(404);
     Map<String, Object> body = readMap(response);
     assertThat(body).containsEntry("code", "EMPLOYEE_NOT_FOUND");
     assertThat(body.keySet()).containsExactlyInAnyOrder("code", "message");
@@ -297,8 +299,8 @@ class EmployeeApiTest extends AbstractSeedTest {
 
   private void assertValidationError(EmployeeUpsertRequest request, String expectedCode)
       throws Exception {
-    HttpResponse<String> response = send("POST", "/api/employees", request);
-    assertThat(response.statusCode()).isEqualTo(400);
+    ApiClient.Response response = sendJson("POST", "/api/employees", request);
+    assertThat(response.status()).isEqualTo(400);
     Map<String, Object> body = readMap(response);
     assertThat(body).containsEntry("code", expectedCode);
     assertThat(body.keySet()).containsExactlyInAnyOrder("code", "message");
@@ -321,40 +323,23 @@ class EmployeeApiTest extends AbstractSeedTest {
   }
 
   private List<EmployeeListItemResponse> list(String query) throws Exception {
-    HttpResponse<String> response = send("GET", "/api/employees" + query, null);
-    assertThat(response.statusCode()).isEqualTo(200);
+    ApiClient.Response response = client.get("/api/employees" + query);
+    assertThat(response.status()).isEqualTo(200);
     return objectMapper.readValue(
         response.body(), new TypeReference<List<EmployeeListItemResponse>>() {});
   }
 
   private EmployeeDetailResponse detail(long id) throws Exception {
-    HttpResponse<String> response = send("GET", "/api/employees/" + id, null);
-    assertThat(response.statusCode()).isEqualTo(200);
+    ApiClient.Response response = client.get("/api/employees/" + id);
+    assertThat(response.status()).isEqualTo(200);
     return objectMapper.readValue(response.body(), EmployeeDetailResponse.class);
   }
 
-  private Map<String, Object> readMap(HttpResponse<String> response) throws Exception {
+  private Map<String, Object> readMap(ApiClient.Response response) throws Exception {
     return objectMapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
   }
 
-  private HttpResponse<String> send(String method, String path, Object body) throws Exception {
-    String json;
-    if (body == null) {
-      json = null;
-    } else if (body instanceof String raw) {
-      json = raw;
-    } else {
-      json = objectMapper.writeValueAsString(body);
-    }
-    HttpRequest.BodyPublisher publisher =
-        json == null
-            ? HttpRequest.BodyPublishers.noBody()
-            : HttpRequest.BodyPublishers.ofString(json);
-    URI uri = URI.create("http://localhost:" + port + path);
-    HttpRequest.Builder builder = HttpRequest.newBuilder(uri).method(method, publisher);
-    if (json != null) {
-      builder.header("Content-Type", "application/json");
-    }
-    return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+  private ApiClient.Response sendJson(String method, String path, Object body) throws Exception {
+    return client.sendJson(method, path, objectMapper.writeValueAsString(body));
   }
 }
