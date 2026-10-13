@@ -3,9 +3,9 @@ import { Navigate, Route, Routes } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
 import StateMessage from './components/StateMessage'
+import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
-import PlaceholderPage from './pages/PlaceholderPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
@@ -53,7 +53,7 @@ function AppRoutes() {
         path="/employees"
         element={
           <ManagerOnly user={user}>
-            <PlaceholderPage current="employees" title="직원" />
+            <EmployeeListPage />
           </ManagerOnly>
         }
       />

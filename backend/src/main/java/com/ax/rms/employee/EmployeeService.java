@@ -70,13 +70,15 @@ public class EmployeeService {
     Map<Long, String> departmentNames =
         departmentRepository.findAll().stream()
             .collect(Collectors.toMap(Department::id, Department::name));
-    Set<Long> employeeIdsWithSkill =
-        skill == null
-            ? null
-            : employeeSkillRepository.findAll().stream()
-                .filter(line -> line.skillName().equals(skill))
-                .map(EmployeeSkill::employeeId)
-                .collect(Collectors.toSet());
+    Map<Long, List<EmployeeSkillResponse>> skillsByEmployee =
+        employeeSkillRepository.findAll().stream()
+            .sorted(Comparator.comparing(EmployeeSkill::id))
+            .collect(
+                Collectors.groupingBy(
+                    EmployeeSkill::employeeId,
+                    Collectors.mapping(
+                        line -> new EmployeeSkillResponse(line.skillName(), line.proficiencyLevel()),
+                        Collectors.toList())));
 
     List<EmployeeListItemResponse> result = new ArrayList<>();
     for (Employee employee : employeeRepository.findAll()) {
@@ -86,7 +88,9 @@ public class EmployeeService {
       if (departmentId != null && employee.departmentId() != departmentId) {
         continue;
       }
-      if (employeeIdsWithSkill != null && !employeeIdsWithSkill.contains(employee.id())) {
+      List<EmployeeSkillResponse> skills =
+          skillsByEmployee.getOrDefault(employee.id(), List.of());
+      if (skill != null && skills.stream().noneMatch(line -> line.skillName().equals(skill))) {
         continue;
       }
       if (status != null && employee.availabilityStatus() != status) {
@@ -111,7 +115,8 @@ public class EmployeeService {
               employee.careerYears(),
               employee.availabilityStatus(),
               currentAvailability,
-              needsReview));
+              needsReview,
+              skills));
     }
     result.sort(Comparator.comparingLong(EmployeeListItemResponse::id));
     return result;
