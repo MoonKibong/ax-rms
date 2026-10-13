@@ -1,0 +1,79 @@
+/* T#16 project detail (BRIEF §6.6): title with badge and buttons, period, description, headcount, two tables. */
+.project-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.project-detail__loading,
+.project-detail__headcount {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.project-detail__headcount {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.project-detail__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.project-detail__title .page__title,
+.project-detail__description {
+  overflow-wrap: anywhere;
+}
+
+.project-detail__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.project-detail__period {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  overflow-wrap: anywhere;
+}
+
+.project-detail__description {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+}
+
+.project-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.project-detail__heading {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.project-detail__missing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.project-detail__link {
+  color: var(--color-primary);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.project-detail__link:hover {
+  text-decoration: underline;
+}

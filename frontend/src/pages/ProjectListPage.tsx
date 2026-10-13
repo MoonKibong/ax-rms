@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { PROJECT_STATUSES, type ProjectStatus, type ProjectSummary } from '../api/projects'
+import { AuthContext } from '../auth/AuthContext'
 import AppShell from '../components/AppShell'
 import Badge from '../components/Badge'
+import ButtonLink from '../components/ButtonLink'
 import DataTable, { type Column } from '../components/DataTable'
+import Period from '../components/Period'
 import SegmentedControl, { type SegmentedOption } from '../components/SegmentedControl'
 import StateMessage from '../components/StateMessage'
 import './pages.css'
@@ -24,20 +27,6 @@ function isStatus(value: string): value is ProjectStatus {
   return (PROJECT_STATUSES as string[]).includes(value)
 }
 
-// "2026-05-16 ~ 2026-09-13": each date stays whole (a hyphen would otherwise allow a break inside it) and the space
-// before "~" does not break, so the line breaks only after the "~" (BRIEF §5). In a card (<1024px) the end date goes
-// on the next line (T#15 criterion 8). One wrapper keeps the pieces in one line of text; the card cell is a flex row,
-// where separate pieces would not flow.
-function Period({ project }: { project: ProjectSummary }) {
-  return (
-    <span className="project-list__period">
-      <span className="project-list__date">{project.startDate}</span>
-      {'\u00a0~ '}
-      <span className="project-list__date project-list__date--end">{project.endDate}</span>
-    </span>
-  )
-}
-
 const COLUMNS: Column<ProjectSummary>[] = [
   {
     key: 'name',
@@ -49,12 +38,15 @@ const COLUMNS: Column<ProjectSummary>[] = [
     ),
   },
   { key: 'status', header: '상태', render: (project) => <Badge status={project.status} /> },
-  { key: 'startDate', header: '기간', render: (project) => <Period project={project} /> },
+  { key: 'startDate', header: '기간', render: (project) => <Period startDate={project.startDate} endDate={project.endDate} /> },
   { key: 'requiredHeadcount', header: '필요 인원', align: 'end' },
   { key: 'assignedHeadcount', header: '배치 인원', align: 'end' },
 ]
 
 function ProjectListPage() {
+  // Nullable on purpose: the list also renders without a provider (T#15 tests); then no write button is drawn.
+  const user = useContext(AuthContext)?.user ?? null
+  const canManage = user?.roles.includes('PROJECT_MANAGER') ?? false
   const [params, setParams] = useSearchParams()
   const raw = params.get('status') ?? ''
   const status = isStatus(raw) ? raw : ''
@@ -111,7 +103,14 @@ function ProjectListPage() {
   return (
     <AppShell current="projects">
       <div className="project-list">
-        <h1 className="page__title">프로젝트</h1>
+        <div className="page__head">
+          <h1 className="page__title">프로젝트</h1>
+          {canManage ? (
+            <ButtonLink to="/projects/new" className="manage-only">
+              프로젝트 등록
+            </ButtonLink>
+          ) : null}
+        </div>
         <SegmentedControl label="상태 필터" options={FILTERS} value={status} onChange={chooseStatus} />
         <div className="project-list__result" aria-busy={state.phase === 'loading' ? true : undefined}>
           {content}

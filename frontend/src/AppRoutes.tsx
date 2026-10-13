@@ -6,6 +6,7 @@ import StateMessage from './components/StateMessage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import { ProjectDetailRoute } from './pages/ProjectDetailPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
@@ -62,6 +63,14 @@ function AppRoutes() {
         element={
           <ManagerOnly user={user}>
             <ProjectListPage />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ManagerOnly user={user}>
+            <ProjectDetailRoute />
           </ManagerOnly>
         }
       />
