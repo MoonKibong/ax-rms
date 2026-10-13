@@ -44,3 +44,32 @@ describe('DataTable', () => {
     expect(screen.getByText('표시할 항목이 없습니다')).toBeInTheDocument()
   })
 })
+
+describe('DataTable cell render (T#15)', () => {
+  type LinkRow = { id: string; name: string; rate: string }
+  const linkColumns: Column<LinkRow>[] = [
+    { key: 'name', header: '이름', render: (row) => <a href={`/people/${row.id}`}>{row.name}</a> },
+    { key: 'rate', header: '투입률', align: 'end' },
+  ]
+  const linkRows: LinkRow[] = [
+    { id: 'a', name: '김하나', rate: '60%' },
+    { id: 'b', name: '이둘', rate: '30%' },
+  ]
+
+  it('draws the render result in the table cell and keeps columns without render as text', () => {
+    render(<DataTable columns={linkColumns} rows={linkRows} rowKey={(row) => row.id} empty={null} />)
+
+    const firstRow = screen.getAllByRole('row')[1]
+    const link = within(firstRow).getByRole('link', { name: '김하나' })
+    expect(link).toHaveAttribute('href', '/people/a')
+    expect(within(firstRow).getAllByRole('cell')[1]).toHaveTextContent('60%')
+  })
+
+  it('draws the render result inside the card cell too (label and value stay on the cell)', () => {
+    render(<DataTable columns={linkColumns} rows={linkRows} rowKey={(row) => row.id} empty={null} />)
+
+    const cell = screen.getByRole('link', { name: '이둘' }).closest('td')
+    expect(cell).toHaveAttribute('data-label', '이름')
+    expect(cell).toHaveAttribute('data-align', 'start')
+  })
+})
