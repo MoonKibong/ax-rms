@@ -1,0 +1,36 @@
+/* T#15 project list (BRIEF §6.5): title, status filter, then the table (cards below 1024px). */
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.project-list__loading {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.project-list__link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.project-list__link:hover {
+  text-decoration: underline;
+}
+
+.project-list__date {
+  white-space: nowrap;
+}
+
+/* Cards (<1024px, the same breakpoint as DataTable): "2026-05-16 ~" and the end date under it, both on the right. */
+@media (max-width: 1023px) {
+  .project-list__period {
+    text-align: end;
+  }
+
+  .project-list__date--end {
+    display: block;
+  }
+}
