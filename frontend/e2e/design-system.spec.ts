@@ -1,10 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
+import { HR_MANAGER, loginAs } from './support/auth'
 import { expectNoHorizontalOverflow, settle } from './support/layout'
 
 // The 48-character value without spaces or hyphens on the reference screen (BRIEF §6.0).
 const LONG_VALUE = 'workforceplannerreferenceunbrokenvaluesample0048'
 
 async function open(page: Page, width: number): Promise<void> {
+  // T#6: `/` needs a login now; a manager account sees the reference screen with the three menu items.
+  await loginAs(page, HR_MANAGER)
   await page.setViewportSize({ width, height: 800 })
   await page.goto('/')
   await settle(page)

@@ -1,0 +1,19 @@
+/* T#6: the login check, before any screen is drawn (BRIEF §6 "불러오는 중", "오류"). */
+.auth-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--layout-gutter-narrow);
+}
+
+.auth-status > .state {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-status__text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
