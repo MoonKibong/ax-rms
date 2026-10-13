@@ -47,4 +47,46 @@ class ProjectRepositoryTest extends AbstractDatabaseTest {
     Project found = repository.findById(inserted.id()).orElseThrow();
     assertThat(found.description()).isNull();
   }
+
+  @Test
+  void updateChangesFieldsAndReportsWhetherRowChanged() {
+    Project inserted =
+        repository.insert(
+            new Project(
+                null,
+                "옛 이름",
+                "옛 설명",
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 12, 31),
+                ProjectStatus.PLANNED));
+
+    boolean changed =
+        repository.update(
+            new Project(
+                inserted.id(),
+                "새 이름",
+                null,
+                LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 11, 30),
+                ProjectStatus.ON_HOLD));
+
+    assertThat(changed).isTrue();
+    Project found = repository.findById(inserted.id()).orElseThrow();
+    assertThat(found.name()).isEqualTo("새 이름");
+    assertThat(found.description()).isNull();
+    assertThat(found.startDate()).isEqualTo(LocalDate.of(2026, 2, 1));
+    assertThat(found.endDate()).isEqualTo(LocalDate.of(2026, 11, 30));
+    assertThat(found.status()).isEqualTo(ProjectStatus.ON_HOLD);
+
+    boolean unknown =
+        repository.update(
+            new Project(
+                999_999L,
+                "없는 프로젝트",
+                null,
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 2),
+                ProjectStatus.PLANNED));
+    assertThat(unknown).isFalse();
+  }
 }

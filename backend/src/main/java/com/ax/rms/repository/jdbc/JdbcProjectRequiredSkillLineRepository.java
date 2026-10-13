@@ -67,6 +67,11 @@ public class JdbcProjectRequiredSkillLineRepository implements ProjectRequiredSk
   }
 
   @Override
+  public void deleteByProjectId(long projectId) {
+    jdbcTemplate.update("delete from project_required_skill_line where project_id = ?", projectId);
+  }
+
+  @Override
   public long count() {
     return jdbcTemplate.queryForObject(
         "select count(*) from project_required_skill_line", Long.class);

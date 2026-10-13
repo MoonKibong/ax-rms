@@ -15,6 +15,9 @@ public interface AssignmentRepository {
   /** 그 직원의 배치를 전부 돌려준다. */
   List<Assignment> findByEmployeeId(long employeeId);
 
+  /** 그 프로젝트의 배치를 전부 돌려준다. */
+  List<Assignment> findByProjectId(long projectId);
+
   /** 저장된 배치 수를 돌려준다. */
   long count();
 }
