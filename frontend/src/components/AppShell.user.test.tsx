@@ -6,7 +6,7 @@ import AppShell, { type NavKey } from './AppShell'
 
 // T#6 criterion 10: the user area and the menu by role (BRIEF §4, D25). T#4's AppShell.test.tsx stays as it is.
 function renderShell(user: CurrentUser, current: NavKey) {
-  const logout = vi.fn()
+  const logout = vi.fn(() => Promise.resolve(true))
   render(
     <AuthContext.Provider value={{ status: 'ready', user, signIn: vi.fn(), logout, retry: vi.fn() }}>
       <AppShell current={current}>

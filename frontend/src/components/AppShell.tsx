@@ -1,7 +1,8 @@
-import { useContext, type ReactNode } from 'react'
+import { useContext, useRef, useState, type ReactNode } from 'react'
 import { Link, useInRouterContext } from 'react-router'
 import { AuthContext, isManager } from '../auth/AuthContext'
 import Button from './Button'
+import { WarningIcon } from './icons'
 import './AppShell.css'
 
 export type NavKey = 'dashboard' | 'employees' | 'projects' | 'me'
@@ -18,6 +19,9 @@ const MANAGER_ITEMS: NavItem[] = [
 ]
 const EMPLOYEE_ITEMS: NavItem[] = [{ key: 'me', label: '내 정보', href: '/me' }]
 
+// BRIEF §3.1: a failed action is explained on the screen, not on the button.
+const LOGOUT_FAILED = '로그아웃하지 못했습니다. 잠시 후 다시 시도하세요.'
+
 type AppShellProps = {
   current: NavKey
   children: ReactNode
@@ -28,6 +32,21 @@ function AppShell({ current, children }: AppShellProps) {
   const user = auth?.user ?? null
   const inRouter = useInRouterContext()
   const items = user && !isManager(user) ? EMPLOYEE_ITEMS : MANAGER_ITEMS
+  const [logoutState, setLogoutState] = useState<'idle' | 'pending' | 'failed'>('idle')
+  const logoutInFlight = useRef(false)
+
+  // One logout request at a time. On success the routes leave this screen; on failure the account stays
+  // logged in, the message says so, and 로그아웃 can be pressed again.
+  async function handleLogout() {
+    if (!auth || logoutInFlight.current) {
+      return
+    }
+    logoutInFlight.current = true
+    setLogoutState('pending')
+    const loggedOut = await auth.logout()
+    logoutInFlight.current = false
+    setLogoutState(loggedOut ? 'idle' : 'failed')
+  }
 
   return (
     <div className="shell">
@@ -36,7 +55,7 @@ function AppShell({ current, children }: AppShellProps) {
         {user ? (
           <div className="shell__user">
             <span className="shell__user-name">{user.employeeName}</span>
-            <Button variant="secondary" onClick={auth?.logout}>
+            <Button variant="secondary" loading={logoutState === 'pending'} onClick={handleLogout}>
               로그아웃
             </Button>
           </div>
@@ -57,7 +76,15 @@ function AppShell({ current, children }: AppShellProps) {
         })}
       </nav>
       <main className="shell__main">
-        <div className="shell__content">{children}</div>
+        <div className="shell__content">
+          {logoutState === 'failed' ? (
+            <p className="shell__alert" role="alert">
+              <WarningIcon size={16} />
+              {LOGOUT_FAILED}
+            </p>
+          ) : null}
+          {children}
+        </div>
       </main>
     </div>
   )

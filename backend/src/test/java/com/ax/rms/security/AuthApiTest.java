@@ -77,15 +77,23 @@ class AuthApiTest extends AbstractApiTest {
 
   @Test
   void formLoginIsRejected() {
-    Response response =
+    Response form =
         client()
             .send(
                 "POST",
                 "/api/auth/login",
                 "application/x-www-form-urlencoded",
                 "username=hr.manager&password=HrManager%211");
+    Response text =
+        client().send("POST", "/api/auth/login", "text/plain", "hr.manager HrManager!1");
 
-    assertThat(response.status()).isEqualTo(415);
+    for (Response response : List.of(form, text)) {
+      assertThat(response.status()).isEqualTo(415);
+      assertThat(response.json().path("code").asText())
+          .as("415 본문 %s", response.body())
+          .isEqualTo("UNSUPPORTED_MEDIA_TYPE");
+      assertThat(response.json().path("message").asText()).isEqualTo("요청 본문은 JSON으로 보내야 합니다.");
+    }
   }
 
   @Test

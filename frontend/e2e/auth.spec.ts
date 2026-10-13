@@ -178,6 +178,52 @@ test.describe('logout (criterion 11)', () => {
     expect(pathOf(page)).toBe('/login')
     expect((await page.request.get('/api/auth/me')).status()).toBe(401)
   })
+
+  // Review 1 (REVISE) finding 1: the screen logs out only when the server session has ended.
+  test('a failed logout keeps the session and says so; 로그아웃 again ends it', async ({ page }) => {
+    const failed = page.getByText('로그아웃하지 못했습니다. 잠시 후 다시 시도하세요.')
+    await loginAs(page, DUAL_MANAGER)
+    await open(page, '/')
+
+    // Held: one request however often 로그아웃 is pressed, and the button is busy.
+    const held: Route[] = []
+    await page.route('**/api/auth/logout', (route) => {
+      held.push(route)
+    })
+    await logoutButton(page).click()
+    await expect.poll(() => held.length).toBe(1)
+    expect(await logoutButton(page).getAttribute('aria-busy')).toBe('true')
+    await logoutButton(page).click()
+    await page.waitForTimeout(300)
+    expect(held.length, 'logout requests while the first is held').toBe(1)
+
+    // Aborted: the request never reaches the server.
+    await held[0].abort()
+    await expect(failed).toBeVisible()
+    expect(pathOf(page)).toBe('/')
+    expect((await page.request.get('/api/auth/me')).status(), 'session after an aborted logout').toBe(200)
+
+    // 5xx: the server did not end the session.
+    await page.unroute('**/api/auth/logout')
+    let served = 0
+    await page.route('**/api/auth/logout', async (route) => {
+      served += 1
+      await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+    })
+    await logoutButton(page).click()
+    await expect.poll(() => served).toBe(1)
+    await expect(logoutButton(page)).not.toHaveAttribute('aria-busy', 'true')
+    expect(pathOf(page)).toBe('/')
+    await expect(failed).toBeVisible()
+    expect((await page.request.get('/api/auth/me')).status(), 'session after a 500').toBe(200)
+    await expectNoHorizontalOverflow(page, WIDTHS)
+
+    // Retry: the real request ends the session.
+    await page.unroute('**/api/auth/logout')
+    await logoutButton(page).click()
+    await page.waitForURL((url) => url.pathname === '/login')
+    expect((await page.request.get('/api/auth/me')).status()).toBe(401)
+  })
 })
 
 test.describe('responsive (criterion 12)', () => {

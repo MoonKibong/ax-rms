@@ -62,11 +62,11 @@ npm --prefix frontend run dev
 
 | API | 응답 |
 |---|---|
-| `POST /api/auth/login` (`Content-Type: application/json`, `{"username", "password"}`) | 200 `{"username", "employeeId", "employeeName", "roles"}`. 틀린 비밀번호와 없는 계정은 같은 401 `AUTH_INVALID_CREDENTIALS`, 빈 값은 400 `AUTH_INVALID_REQUEST`, JSON이 아니면 415. 이미 세션이 있었으면 세션 ID를 새로 발급한다. |
+| `POST /api/auth/login` (`Content-Type: application/json`, `{"username", "password"}`) | 200 `{"username", "employeeId", "employeeName", "roles"}`. 틀린 비밀번호와 없는 계정은 같은 401 `AUTH_INVALID_CREDENTIALS`, 빈 값은 400 `AUTH_INVALID_REQUEST`, JSON이 아니면 415 `UNSUPPORTED_MEDIA_TYPE`. 이미 세션이 있었으면 세션 ID를 새로 발급한다. |
 | `GET /api/auth/me` | 로그인 중이면 200(로그인 응답과 같은 본문), 아니면 401 `AUTH_REQUIRED` |
 | `POST /api/auth/logout` | 204. 세션을 없앤다. |
 
-오류 본문은 모두 `{"code": "...", "message": "..."}`이다(D33). 로그인이 없으면 401 `AUTH_REQUIRED`, 권한이 없으면 403 `AUTH_FORBIDDEN`이다.
+인증 API의 오류와 401·403·415 응답의 본문은 `{"code": "...", "message": "..."}`이다(D33). 로그인이 없으면 401 `AUTH_REQUIRED`, 권한이 없으면 403 `AUTH_FORBIDDEN`, JSON이 아닌 본문은 415 `UNSUPPORTED_MEDIA_TYPE`이다. 권한 단계를 지난 요청에 아직 처리기가 없으면(404 등) Spring 기본 오류 본문이 나간다. 이후 API 태스크는 자기 오류를 이 형식으로 답한다.
 
 모든 `/api` 요청의 권한은 `backend/src/main/java/com/ax/rms/security/ApiSecurityFilterChain.java` 한 곳에서 정한다. 표에 없는 요청은 막는다. 이후 API는 이 경로 아래에 두고, 새 경로가 필요하면 이 표를 함께 바꾼다.
 

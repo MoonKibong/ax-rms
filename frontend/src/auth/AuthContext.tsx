@@ -15,7 +15,8 @@ export type AuthState = {
   status: 'loading' | 'error' | 'ready'
   user: CurrentUser | null
   signIn: (user: CurrentUser) => void
-  logout: () => void
+  // Resolves true once the server session has ended (or there was none); false if it may still be alive.
+  logout: () => Promise<boolean>
   retry: () => void
 }
 
@@ -69,10 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('ready')
   }, [])
 
-  const logout = useCallback(() => {
-    fetch('/api/auth/logout', { method: 'POST' })
-      .catch(() => undefined)
-      .finally(() => setUser(null))
+  // The screen logs out only when the server says the session is gone: 2xx (ended now) or 401 (already gone).
+  // A network error or any other answer keeps the account logged in, so the caller can say so and try again.
+  const logout = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' })
+      await response.text().catch(() => '')
+      if (response.ok || response.status === 401) {
+        setUser(null)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
   }, [])
 
   const retry = useCallback(() => {
