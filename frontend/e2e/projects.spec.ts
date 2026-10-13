@@ -22,6 +22,28 @@ async function open(page: Page, width: number, path = '/projects'): Promise<void
 
 const filter = (page: Page) => page.getByRole('group', { name: '상태 필터' })
 
+// Where the pieces of the first row's period sit: the top of the first date, of the "~", and of the second date.
+async function periodLines(page: Page) {
+  return page.locator('tbody tr').first().evaluate((element) => {
+    const periodCell = element.querySelectorAll('td')[2]
+    const dates = periodCell.querySelectorAll('.project-list__date')
+    const between = dates[0].nextSibling as Text
+    const topOf = (node: Node, index: number) => {
+      const range = document.createRange()
+      range.setStart(node, index)
+      range.setEnd(node, index + 1)
+      return range.getBoundingClientRect().top
+    }
+    const endText = dates[1].firstChild as Text
+    return {
+      first: topOf(dates[0].firstChild!, 0),
+      tilde: topOf(between, between.data.indexOf('~')),
+      second: topOf(endText, 0),
+      dateRects: Array.from(dates).map((date) => date.getClientRects().length),
+    }
+  })
+}
+
 for (const width of [1280, 360]) {
   test(`project list with the seed at ${width}px`, async ({ page }) => {
     await loginAs(page, PROJECT_MANAGER)
@@ -165,75 +187,44 @@ for (const width of [1280, 360]) {
       const cells = Array.from(element.querySelectorAll('td'))
       const nameCell = cells[0]
       const periodCell = cells[2]
-      const dates = periodCell.querySelectorAll('.project-list__date')
-      const topOfFirstChar = (node: Node, index: number) => {
-        const range = document.createRange()
-        range.setStart(node, index)
-        range.setEnd(node, index + 1)
-        return range.getBoundingClientRect().top
-      }
-      const between = dates[0].nextSibling as Text
       return {
         name: nameCell.textContent === longName,
         nameFits: nameCell.scrollWidth <= nameCell.clientWidth,
         period: periodCell.textContent?.replace(/\s/g, ' '),
         required: cells[3].textContent,
         assigned: cells[4].textContent,
-        // The first date and the "~" share a line: the space before "~" does not break (BRIEF §5).
-        dateTop: topOfFirstChar(dates[0].firstChild!, 0),
-        tildeTop: topOfFirstChar(between, between.data.indexOf('~')),
       }
     }, LONG_NAME)
+    const lines = await periodLines(page)
 
     expect(facts.name).toBe(true)
     expect(facts.nameFits, '48-character name wraps inside its cell').toBe(true)
     expect(facts.period).toBe('2026-05-16 ~ 2026-09-13')
     expect(facts.required).toBe('5')
     expect(facts.assigned).toBe('3')
-    expect(facts.tildeTop).toBe(facts.dateTop)
+    // The first date and the "~" always share a line (the space before "~" does not break, BRIEF §5).
+    expect(lines.tilde).toBe(lines.first)
+    if (width === 360) {
+      // Cards (<1024px): the end date is on the next line, so the first line ends with "~" (T#15 criterion 8).
+      expect(lines.second, 'the end date starts on the next line at 360px').toBeGreaterThan(lines.tilde)
+    } else {
+      // Table (>=1024px): one line.
+      expect(lines.second, 'one line in the table').toBe(lines.tilde)
+    }
   })
 }
 
-test('the period breaks only after the "~" once the value is too narrow for one line', async ({ page }) => {
+test('a date is never split, even in a very narrow card', async ({ page }) => {
   await loginAs(page, PROJECT_MANAGER)
   await stubProjects(page, (route) => json(route, SAMPLE))
-  await open(page, 360)
+  await open(page, 240)
+
   expect(await filter(page).count(), 'status filters').toBe(1)
   await expect(page.locator('table')).toHaveCount(1)
-
-  const linesAt = () =>
-    page.locator('tbody tr').first().evaluate((element) => {
-      const periodCell = element.querySelectorAll('td')[2]
-      const dates = periodCell.querySelectorAll('.project-list__date')
-      const between = dates[0].nextSibling as Text
-      const topOf = (node: Node, index: number) => {
-        const range = document.createRange()
-        range.setStart(node, index)
-        range.setEnd(node, index + 1)
-        return range.getBoundingClientRect().top
-      }
-      const lastNode = dates[1].firstChild as Text
-      return {
-        first: topOf(dates[0].firstChild!, 0),
-        tilde: topOf(between, between.data.indexOf('~')),
-        second: topOf(lastNode, 0),
-        last: topOf(lastNode, lastNode.data.length - 1),
-      }
-    })
-
-  // Narrow the viewport until the value no longer fits on one line, then look at where it breaks.
-  let wrapped: Awaited<ReturnType<typeof linesAt>> | null = null
-  for (let width = 340; width >= 160 && !wrapped; width -= 10) {
-    await page.setViewportSize({ width, height: 800 })
-    await settle(page)
-    const lines = await linesAt()
-    if (lines.last > lines.first) {
-      wrapped = lines
-    }
-  }
-  expect(wrapped, 'the value wraps at some narrower width').not.toBeNull()
-  expect(wrapped!.tilde, 'the "~" stays on the first line, with the first date').toBe(wrapped!.first)
-  expect(wrapped!.second, 'the second date starts on the next line').toBeGreaterThan(wrapped!.tilde)
+  const lines = await periodLines(page)
+  expect(lines.dateRects, 'each date is one box on one line').toEqual([1, 1])
+  expect(lines.tilde).toBe(lines.first)
+  expect(lines.second).toBeGreaterThan(lines.tilde)
 })
 
 for (const width of [1280, 360]) {
@@ -333,6 +324,12 @@ test('no sideways scroll for the list and the three states at 1280, 1024, 1023 a
     await page.setViewportSize({ width, height: 800 })
     await settle(page)
     expect(await page.locator('table').evaluate((table) => getComputedStyle(table).display), `${width}px`).toBe(display)
+    const lines = await periodLines(page)
+    // The first date and the "~" share a line in both layouts; a card puts the end date on the next line.
+    expect(lines.tilde, `${width}px: "~" stays with the first date`).toBe(lines.first)
+    if (display === 'block') {
+      expect(lines.second, `${width}px: the end date is on the next line in a card`).toBeGreaterThan(lines.tilde)
+    }
   }
 
   for (const next of ['empty', 'error'] as const) {
