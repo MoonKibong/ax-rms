@@ -10,6 +10,9 @@ public interface ProjectRepository {
   /** 프로젝트를 저장하고, 생성된 id가 채워진 값을 돌려준다. */
   Project insert(Project project);
 
+  /** 그 id의 이름·설명·기간·상태를 바꾼다. 바뀐 행이 있으면 {@code true}, 없는 id면 {@code false}를 돌려준다. */
+  boolean update(Project project);
+
   /** 전체 프로젝트를 돌려준다. */
   List<Project> findAll();
 
