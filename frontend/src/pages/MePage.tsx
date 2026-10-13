@@ -1,13 +1,18 @@
-import type { CurrentUser } from '../auth/AuthContext'
+import { useAuth } from '../auth/AuthContext'
 import AppShell from '../components/AppShell'
+import EmployeeDetailLoader from './EmployeeDetail'
 import './pages.css'
 
-// T#6: 내 정보 (D24) until T#14 puts the read-only employee detail here.
-function MePage({ user }: { user: CurrentUser }) {
+// 내 정보 (D24, T#38): the logged-in account's own employee detail from GET /api/me/employee, read-only for every role.
+// The T#6 title stays; the employee's name is the heading below it (the login's name until the detail has come).
+function MePage() {
+  const { user } = useAuth()
   return (
     <AppShell current="me">
-      <h1 className="page__title">내 정보</h1>
-      <p className="page__name">{user.employeeName}</p>
+      <div className="me-page">
+        <h1 className="page__title">내 정보</h1>
+        <EmployeeDetailLoader url="/api/me/employee" headingLevel={2} pendingName={user?.employeeName} />
+      </div>
     </AppShell>
   )
 }

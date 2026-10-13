@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import type { EmployeeListItem } from '../api/employees'
 import AppShell from '../components/AppShell'
 import Badge from '../components/Badge'
@@ -40,7 +40,16 @@ const AVAILABILITY_OPTIONS: SelectOption[] = [
 const NONE = <span className="employee-list__none">—</span>
 
 const COLUMNS: Column<EmployeeListItem>[] = [
-  { key: 'name', header: '이름' },
+  // T#38: the name links to the employee's detail (BRIEF §3.3: the link is the first column's name).
+  {
+    key: 'name',
+    header: '이름',
+    render: (employee) => (
+      <Link className="employee-list__link" to={`/employees/${employee.id}`}>
+        {employee.name}
+      </Link>
+    ),
+  },
   { key: 'departmentName', header: '부서' },
   { key: 'jobTitle', header: '직무' },
   {

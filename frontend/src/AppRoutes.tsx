@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
 import StateMessage from './components/StateMessage'
+import EmployeeDetailPage from './pages/EmployeeDetailPage'
 import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
@@ -58,6 +59,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/employees/:id"
+        element={
+          <ManagerOnly user={user}>
+            <EmployeeDetailPage />
+          </ManagerOnly>
+        }
+      />
+      <Route
         path="/projects"
         element={
           <ManagerOnly user={user}>
@@ -65,7 +74,7 @@ function AppRoutes() {
           </ManagerOnly>
         }
       />
-      <Route path="/me" element={user ? <MePage user={user} /> : <Navigate to="/login" replace />} />
+      <Route path="/me" element={user ? <MePage /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={user ? homePath(user) : '/login'} replace />} />
     </Routes>
   )
