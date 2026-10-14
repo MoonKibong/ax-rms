@@ -2,7 +2,8 @@ import type { AvailabilityStatus } from '../api/employees'
 import type { ProjectStatus } from '../api/projects'
 import './Badge.css'
 
-// The statuses a badge writes out: project status (D13, T#15), employee availability (D6) and 확인 필요 (D21, T#13).
+// The statuses a badge writes out: project status (D13, T#15), employee availability (D6), 확인 필요 (D21, T#13)
+// and 인력 부족 (D20, T#18; shared with #32).
 export type BadgeStatus = ProjectStatus | AvailabilityStatus | 'NEEDS_REVIEW' | 'UNDERSTAFFED'
 
 // BRIEF §3.6. The status is always written out; colour only backs it up (D13).

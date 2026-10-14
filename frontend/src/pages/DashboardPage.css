@@ -1,0 +1,167 @@
+/* T#18 dashboard (BRIEF §6.2): the title, five number tiles, then four lists. From 1024px the tiles are one row of
+   five and the lists a grid of two columns; below 1024px the tiles are two a row and the lists one column. */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.dashboard__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.dashboard__loading {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+/* BRIEF §3.6 number tile: the whole tile is a link to the related list. */
+.dashboard__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.dashboard-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color 120ms;
+}
+
+.dashboard-tile:hover {
+  background: var(--color-surface-subtle);
+}
+
+.dashboard-tile__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.dashboard-tile__figure {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.dashboard-tile__value {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-2xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* BRIEF §5 empty value: an em dash in the muted colour, without a unit. */
+.dashboard-tile__value--none {
+  color: var(--color-text-muted);
+}
+
+.dashboard-tile__unit {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.dashboard__lists {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.dashboard-list__title {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dashboard-list__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--row-min-height);
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.dashboard-list__item + .dashboard-list__item {
+  border-top: 1px solid var(--color-border);
+}
+
+.dashboard-list__link {
+  min-width: 0;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.dashboard-list__link:hover {
+  text-decoration: underline;
+}
+
+.dashboard-list__value {
+  flex: none;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-list__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-list__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dashboard-list__meta {
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 1024px) {
+  .dashboard__tiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  .dashboard__lists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+  }
+}

@@ -12,10 +12,11 @@ const WARNING = 'rgb(143, 83, 0)'
 const WARNING_BG = 'rgb(253, 241, 220)'
 
 async function open(page: Page, width: number): Promise<void> {
-  // T#6: `/` needs a login now; a manager account sees the reference screen.
+  // T#6: the reference screen needs a login; a manager account sees it.
+  // T#18: the dashboard took `/`, so the reference screen is at /design-reference.
   await loginAs(page, HR_MANAGER)
   await page.setViewportSize({ width, height: 800 })
-  await page.goto('/')
+  await page.goto('/design-reference')
   await settle(page)
 }
 

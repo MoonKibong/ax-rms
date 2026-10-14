@@ -45,7 +45,7 @@
   background: var(--color-warning-bg);
 }
 
-/* T#32: 인력 부족 (D20, BRIEF 3.6): warning on warning-bg, the same colours as 보류 and 확인 필요. */
+/* T#18: 인력 부족 on the dashboard (BRIEF §3.6, D20); #32 uses it on the project list. */
 .badge[data-status='UNDERSTAFFED'] {
   color: var(--color-warning);
   background: var(--color-warning-bg);
