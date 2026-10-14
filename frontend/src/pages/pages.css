@@ -4,3 +4,18 @@
   line-height: var(--line-height-xl);
   font-weight: var(--font-weight-bold);
 }
+
+/* T#16: title on the left, the page's buttons on the right. */
+.page__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* BRIEF §6.6: writing screens (forms) are for the wide layout; below 1024px these buttons are not drawn. */
+@media (max-width: 1023px) {
+  .button.manage-only {
+    display: none;
+  }
+}
