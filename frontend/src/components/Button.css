@@ -13,6 +13,7 @@
   line-height: var(--line-height-sm);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color 120ms, color 120ms, border-color 120ms;
 }
