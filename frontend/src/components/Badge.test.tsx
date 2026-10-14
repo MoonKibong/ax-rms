@@ -36,3 +36,12 @@ describe('Badge employee variants', () => {
     expect(badge).toHaveAttribute('data-status', status)
   })
 })
+
+// T#32 criterion 4: the 인력 부족 variant (BRIEF §3.6, D20) is written out as text too.
+describe('Badge 인력 부족', () => {
+  it('writes UNDERSTAFFED as "인력 부족" and records the status on the element', () => {
+    render(<Badge status="UNDERSTAFFED" />)
+
+    expect(screen.getByText('인력 부족')).toHaveAttribute('data-status', 'UNDERSTAFFED')
+  })
+})

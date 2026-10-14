@@ -19,3 +19,7 @@
 .project-list__link:hover {
   text-decoration: underline;
 }
+
+.project-list__none {
+  color: var(--color-text-muted);
+}

@@ -103,9 +103,11 @@ for (const width of [1280, 360]) {
       ['기간', 'col'],
       ['필요 인원', 'col'],
       ['배치 인원', 'col'],
+      ['인력 부족', 'col'],
     ])
     expect(facts.required).toEqual(['2', '2', '2', '2', '2'])
-    expect(facts.text).not.toContain('인력 부족')
+    // T#32 (PM exception to T#15): the column header "인력 부족" is on the screen now; the seed has no project short of people, so no badge.
+    await expect(page.locator('[data-status="UNDERSTAFFED"]')).toHaveCount(0)
     // T#16 (PM exception to T#15): project.manager sees "프로젝트 등록" at 1280px; at 360px it is display: none, so
     // the page text (innerText) does not have it.
     if (width === 1280) {

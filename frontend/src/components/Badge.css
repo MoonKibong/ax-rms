@@ -44,3 +44,9 @@
   color: var(--color-warning);
   background: var(--color-warning-bg);
 }
+
+/* T#32: 인력 부족 (D20, BRIEF 3.6): warning on warning-bg, the same colours as 보류 and 확인 필요. */
+.badge[data-status='UNDERSTAFFED'] {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
