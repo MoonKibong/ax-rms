@@ -28,3 +28,19 @@
   color: var(--color-warning);
   background: var(--color-warning-bg);
 }
+
+/* T#13: employee availability (D6) and 확인 필요 (D21). */
+.badge[data-status='AVAILABLE'] {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.badge[data-status='UNAVAILABLE'] {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.badge[data-status='NEEDS_REVIEW'] {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}

@@ -5,12 +5,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.page__name {
-  margin-top: var(--space-2);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
-}
-
 /* T#16: title on the left, the page's buttons on the right. */
 .page__head {
   display: flex;
