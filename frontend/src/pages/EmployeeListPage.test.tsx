@@ -2,7 +2,9 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EmployeeListItem } from '../api/employees'
-import { flush, never, reply } from '../test/api'
+import { AuthContext } from '../auth/AuthContext'
+import { DUAL_MANAGER, HR_MANAGER, flush, never, reply } from '../test/api'
+import { PROJECT_MANAGER, authAs } from '../test/employees'
 import EmployeeListPage from './EmployeeListPage'
 
 // T#13 criteria 4-8: the employee list screen (contract "화면 동작"). fetch is replaced; the router is a MemoryRouter.
@@ -431,5 +433,46 @@ describe('EmployeeListPage', () => {
     expect(screen.getByRole('button', { name: '필터 (2)' })).toBe(toggle)
     await search('박')
     expect(screen.getByRole('button', { name: '필터 (2)' })).toBe(toggle)
+  })
+})
+
+// T#39 criterion 4: "직원 등록" on the title row (BRIEF §6.3), for an HR manager only. The T#13 tests above render
+// without a login state and so without this button. Hiding it below 1024px is CSS; the e2e of criterion 8 measures it.
+describe('EmployeeListPage 직원 등록', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  async function renderAs(user: typeof HR_MANAGER) {
+    render(
+      <MemoryRouter initialEntries={['/employees']}>
+        <AuthContext.Provider value={authAs(user)}>
+          <EmployeeListPage />
+          <Where />
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    )
+    await flush()
+  }
+
+  for (const user of [HR_MANAGER, DUAL_MANAGER]) {
+    it(`gives ${user.username} 직원 등록, which goes to /employees/new`, async () => {
+      stubFetch(() => reply(200, ALL))
+
+      await renderAs(user)
+
+      fireEvent.click(screen.getByRole('button', { name: '직원 등록' }))
+      await flush()
+      expect(where()).toBe('/employees/new')
+    })
+  }
+
+  it('gives project.manager no 직원 등록', async () => {
+    stubFetch(() => reply(200, ALL))
+
+    await renderAs(PROJECT_MANAGER)
+
+    expect(screen.getByRole('cell', { name: '박소영' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '직원 등록' })).not.toBeInTheDocument()
   })
 })

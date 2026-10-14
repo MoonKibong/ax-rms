@@ -1,6 +1,8 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import type { EmployeeListItem } from '../api/employees'
+import { AuthContext } from '../auth/AuthContext'
+import { isHrManager } from '../auth/roles'
 import AppShell from '../components/AppShell'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
@@ -134,6 +136,9 @@ async function fetchEmployees(url: string, signal: AbortSignal): Promise<Employe
 
 function EmployeeListPage() {
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
+  // T#39 (BRIEF §6.3): 직원 등록 is the HR manager's. Without a login state (T#13's tests) it is not drawn.
+  const canRegister = isHrManager(useContext(AuthContext)?.user)
   const [choicesState, setChoicesState] = useState<LoadState>({ phase: 'loading' })
   const [choicesAttempt, setChoicesAttempt] = useState(0)
   const [list, setList] = useState<LoadState>({ phase: 'loading' })
@@ -251,7 +256,14 @@ function EmployeeListPage() {
   return (
     <AppShell current="employees">
       <div className="employee-list">
-        <h1 className="page__title">직원</h1>
+        <div className="employee-list__head">
+          <h1 className="page__title">직원</h1>
+          {canRegister ? (
+            <Button className="employee-list__add" onClick={() => navigate('/employees/new')}>
+              직원 등록
+            </Button>
+          ) : null}
+        </div>
         <TextField
           className="employee-list__search"
           label="이름 검색"

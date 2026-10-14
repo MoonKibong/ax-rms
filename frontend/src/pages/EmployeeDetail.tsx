@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { EmployeeDetail as Detail, ProficiencyLevel } from '../api/employees'
 import type { ProjectStatus } from '../api/projects'
 import Badge from '../components/Badge'
@@ -7,6 +7,7 @@ import Gantt from '../components/Gantt'
 import type { GanttAssignment } from '../components/gantt/model'
 import Spinner from '../components/Spinner'
 import StateMessage from '../components/StateMessage'
+import EmployeeActions from './EmployeeActions'
 import './EmployeeDetail.css'
 
 // T#38, BRIEF §6.4 (D2, D15, D21, D24, D36): one employee's detail as the API returns it, used by the detail screen
@@ -51,7 +52,9 @@ async function loadDetail(url: string, signal: AbortSignal): Promise<Detail> {
   return (await response.json()) as Detail
 }
 
-function EmployeeDetailView({ employee, headingLevel }: { employee: Detail; headingLevel: 1 | 2 }) {
+type EmployeeDetailViewProps = { employee: Detail; headingLevel: 1 | 2; actions?: ReactNode }
+
+function EmployeeDetailView({ employee, headingLevel, actions }: EmployeeDetailViewProps) {
   const Name = headingLevel === 1 ? 'h1' : 'h2'
   const info: Array<[string, string | null]> = [
     ['부서', employee.departmentName],
@@ -123,6 +126,7 @@ function EmployeeDetailView({ employee, headingLevel }: { employee: Detail; head
         <Gantt assignments={bars} today={employee.today} />
         {rows.length > 0 ? <DataTable columns={COLUMNS} rows={rows} rowKey={(row) => row.key} empty={null} /> : null}
       </section>
+      {actions}
     </div>
   )
 }
@@ -135,11 +139,14 @@ type EmployeeDetailLoaderProps = {
   // 내 정보 already knows whose page it is from the login (T#6 showed that name there): it stays as the heading while
   // the detail is loading or could not be loaded. Once the detail has come, every value is the API's.
   pendingName?: string
+  // T#39: the HR manager's 수정 and 상태 변경 under the detail (never on 내 정보). A status change shows the detail
+  // the server answered with.
+  manage?: boolean
 }
 
 // One request at a time counts: a new address (or a retry) cancels the one before, and an answer that comes after
 // that is ignored, so the screen always shows the last address.
-function EmployeeDetailLoader({ url, headingLevel, pendingName }: EmployeeDetailLoaderProps) {
+function EmployeeDetailLoader({ url, headingLevel, pendingName, manage = false }: EmployeeDetailLoaderProps) {
   const [state, setState] = useState<LoadState>({ phase: 'loading' })
   const [attempt, setAttempt] = useState(0)
 
@@ -168,7 +175,10 @@ function EmployeeDetailLoader({ url, headingLevel, pendingName }: EmployeeDetail
     return <StateMessage kind="error" description={NOT_FOUND} />
   }
   if (state.phase === 'ready') {
-    return <EmployeeDetailView employee={state.employee} headingLevel={headingLevel} />
+    const actions = manage ? (
+      <EmployeeActions employee={state.employee} onChanged={(employee) => setState({ phase: 'ready', employee })} />
+    ) : null
+    return <EmployeeDetailView employee={state.employee} headingLevel={headingLevel} actions={actions} />
   }
   const Name = headingLevel === 1 ? 'h1' : 'h2'
   return (

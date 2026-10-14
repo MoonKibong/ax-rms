@@ -13,8 +13,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint .",
-    "test:e2e": "bash ../scripts/e2e-servers.sh -- npm run e2e:run",
+    "test:e2e": "bash ../scripts/e2e-servers.sh -- npm run e2e:run && bash ../scripts/e2e-servers.sh --fresh-db -- npm run e2e:write",
     "e2e:run": "playwright test --project=e2e",
+    "e2e:write": "playwright test --project=e2e-write",
     "screenshots": "playwright test --project=screens"
   },
   "dependencies": {
