@@ -31,7 +31,7 @@ class AllocationNotFoundTest extends AbstractApiTest {
     long p3 = projectIdByName(this, "베타 프로젝트");
     Response response = create(client, 999999, p3, FIXED_TODAY, FIXED_TODAY.plusDays(10), 20);
     assertThat(response.status()).isEqualTo(404);
-    assertThat(response.json().get("code").asText()).isEqualTo("ASSIGNMENT_EMPLOYEE_NOT_FOUND");
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_EMPLOYEE_NOT_FOUND");
   }
 
   @Test
@@ -39,20 +39,28 @@ class AllocationNotFoundTest extends AbstractApiTest {
     long e1 = employeeIdByName(this, "박소영");
     Response response = create(client, e1, 999999, FIXED_TODAY, FIXED_TODAY.plusDays(10), 20);
     assertThat(response.status()).isEqualTo(404);
-    assertThat(response.json().get("code").asText()).isEqualTo("ASSIGNMENT_PROJECT_NOT_FOUND");
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_PROJECT_NOT_FOUND");
+  }
+
+  @Test
+  void missingProjectComesBeforeTheUnavailableEmployeeRule() {
+    long e2 = employeeIdByName(this, "최동훈");
+    Response response = create(client, e2, 999999, FIXED_TODAY, FIXED_TODAY.plusDays(10), 20);
+    assertThat(response.status()).isEqualTo(404);
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_PROJECT_NOT_FOUND");
   }
 
   @Test
   void missingAssignmentOnPatch() {
     Response response = patch(client, 999999, "{\"allocationPercent\": 40}");
     assertThat(response.status()).isEqualTo(404);
-    assertThat(response.json().get("code").asText()).isEqualTo("ASSIGNMENT_NOT_FOUND");
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_NOT_FOUND");
   }
 
   @Test
   void missingAssignmentOnDelete() {
     Response response = delete(client, 999999);
     assertThat(response.status()).isEqualTo(404);
-    assertThat(response.json().get("code").asText()).isEqualTo("ASSIGNMENT_NOT_FOUND");
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_NOT_FOUND");
   }
 }

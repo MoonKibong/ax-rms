@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AssignmentService {
 
+  private static final String REQUEST_INVALID = "ASSIGNMENT_REQUEST_INVALID";
   private static final String INVALID_PERCENT = "ASSIGNMENT_INVALID_PERCENT";
   private static final String EMPLOYEE_NOT_FOUND = "ASSIGNMENT_EMPLOYEE_NOT_FOUND";
   private static final String PROJECT_NOT_FOUND = "ASSIGNMENT_PROJECT_NOT_FOUND";
@@ -47,17 +48,18 @@ public class AssignmentService {
     this.projects = projects;
   }
 
-  /** 새 배치를 검증(D14·존재·D8·D27 순)하고 저장한다. */
+  /** 새 배치를 검증(기간 형식·D14·존재·D8·D27 순)하고 저장한다. */
   @Transactional
   public Assignment create(
       long employeeId, long projectId, LocalDate start, LocalDate end, int percent) {
+    requireValidPeriod(start, end);
     requireValidPercent(percent);
     Employee employee = findEmployee(employeeId);
+    Project project = findProject(projectId);
     if (employee.availabilityStatus() == AvailabilityStatus.UNAVAILABLE) {
       throw new AssignmentRuleException(
           EMPLOYEE_UNAVAILABLE, "투입 불가 직원은 새 배치를 받을 수 없습니다.");
     }
-    Project project = findProject(projectId);
     List<Assignment> existing = assignments.findByEmployeeId(employeeId);
     if (calculator.periodAvailability(existing, start, end) == 0) {
       throw new AssignmentRuleException(NO_AVAILABILITY, "대상 기간에 가용률이 0%입니다.");
@@ -79,6 +81,7 @@ public class AssignmentService {
     int newPercent = percent == null ? current.allocationPercent() : percent;
     LocalDate newStart = start == null ? current.startDate() : start;
     LocalDate newEnd = end == null ? current.endDate() : end;
+    requireValidPeriod(newStart, newEnd);
     if (percent != null) {
       requireValidPercent(percent);
     }
@@ -115,6 +118,7 @@ public class AssignmentService {
 
   /** 기간의 후보 직원 목록을 돌려준다. 가용률은 T#7의 {@code periodAvailability}(D18)다. */
   public List<Candidate> candidates(long projectId, LocalDate start, LocalDate end) {
+    requireValidPeriod(start, end);
     findProject(projectId);
     return employees.findAll().stream()
         .map(
@@ -131,6 +135,19 @@ public class AssignmentService {
   /** 후보 직원 한 명. */
   public record Candidate(
       long employeeId, String name, String availabilityStatus, int periodAvailability) {}
+
+  /**
+   * 기간 형식: 시작일과 종료일이 모두 있고 시작일이 종료일보다 늦지 않아야 한다. 업무 규칙(D14·D8·D27)보다 먼저 본다.
+   * 역전된 기간은 날짜별 합계 검사를 건너뛰어 저장될 수 있으므로 여기서 막는다.
+   */
+  private static void requireValidPeriod(LocalDate start, LocalDate end) {
+    if (start == null || end == null) {
+      throw new AssignmentRuleException(REQUEST_INVALID, "시작일과 종료일을 입력하세요.");
+    }
+    if (start.isAfter(end)) {
+      throw new AssignmentRuleException(REQUEST_INVALID, "시작일은 종료일보다 늦을 수 없습니다.");
+    }
+  }
 
   /** D14: 5~100의 5 단위가 아니면 위반이다. */
   private static void requireValidPercent(int percent) {

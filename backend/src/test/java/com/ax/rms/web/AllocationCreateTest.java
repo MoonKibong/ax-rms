@@ -26,6 +26,34 @@ class AllocationCreateTest extends AbstractApiTest {
   }
 
   @Test
+  void invertedOrMissingPeriodIsRejectedAndNothingIsSaved() {
+    long e3 = employeeIdByName(this, "이수민");
+    long p4 = projectIdByName(this, "델타 프로젝트");
+    int before = this.assignmentRepository().findByEmployeeId(e3).size();
+
+    Response inverted =
+        create(client, e3, p4, LocalDate.of(2026, 10, 20), LocalDate.of(2026, 7, 15), 20);
+    assertThat(inverted.status()).as("inverted status").isEqualTo(400);
+    assertThat(inverted.json().path("code").asText()).isEqualTo("ASSIGNMENT_REQUEST_INVALID");
+
+    String noStart =
+        "{\"employeeId\": " + e3 + ", \"projectId\": " + p4
+            + ", \"endDate\": \"2026-08-15\", \"allocationPercent\": 20}";
+    Response missingStart = client.sendJson("POST", "/api/assignments", noStart);
+    assertThat(missingStart.status()).as("missing start status").isEqualTo(400);
+    assertThat(missingStart.json().path("code").asText()).isEqualTo("ASSIGNMENT_REQUEST_INVALID");
+
+    String nullEnd =
+        "{\"employeeId\": " + e3 + ", \"projectId\": " + p4
+            + ", \"startDate\": \"2026-07-15\", \"endDate\": null, \"allocationPercent\": 20}";
+    Response missingEnd = client.sendJson("POST", "/api/assignments", nullEnd);
+    assertThat(missingEnd.status()).as("null end status").isEqualTo(400);
+    assertThat(missingEnd.json().path("code").asText()).isEqualTo("ASSIGNMENT_REQUEST_INVALID");
+
+    assertThat(this.assignmentRepository().findByEmployeeId(e3)).hasSize(before);
+  }
+
+  @Test
   void normalAllocation() {
     long e1 = employeeIdByName(this, "박소영");
     long p3 = projectIdByName(this, "베타 프로젝트");

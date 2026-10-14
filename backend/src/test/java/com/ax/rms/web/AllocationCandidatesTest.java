@@ -26,6 +26,14 @@ class AllocationCandidatesTest extends AbstractApiTest {
   }
 
   @Test
+  void invertedPeriodIsRejected() {
+    long p3 = projectIdByName(this, "베타 프로젝트");
+    Response response = candidates(client, p3, FIXED_TODAY.plusDays(10), FIXED_TODAY);
+    assertThat(response.status()).as("inverted status").isEqualTo(400);
+    assertThat(response.json().path("code").asText()).isEqualTo("ASSIGNMENT_REQUEST_INVALID");
+  }
+
+  @Test
   void candidateList() {
     long p3 = projectIdByName(this, "베타 프로젝트");
     Response response = candidates(client, p3, FIXED_TODAY, FIXED_TODAY.plusDays(10));
