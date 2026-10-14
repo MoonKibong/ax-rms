@@ -4,6 +4,7 @@ import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
 import { isHrManager, isProjectManager } from './auth/roles'
 import StateMessage from './components/StateMessage'
+import DashboardPage from './pages/DashboardPage'
 import EmployeeDetailPage from './pages/EmployeeDetailPage'
 import EmployeeFormPage from './pages/EmployeeFormPage'
 import EmployeeListPage from './pages/EmployeeListPage'
@@ -90,6 +91,15 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to={homePath(user)} replace /> : <LoginPage />} />
       <Route
         path="/"
+        element={
+          <ManagerOnly user={user}>
+            <DashboardPage />
+          </ManagerOnly>
+        }
+      />
+      {/* T#18: the reference screen of T#4 (BRIEF §6.0) gave `/` to the dashboard; its checks open it here. */}
+      <Route
+        path="/design-reference"
         element={
           <ManagerOnly user={user}>
             <App />

@@ -10,12 +10,26 @@ function Where() {
   return <output data-testid="where">{useLocation().pathname}</output>
 }
 
+// T#18: `/` is the dashboard now; an answer with nothing in it is enough for the routes.
+const DASHBOARD = {
+  employeeCount: 0,
+  availableCount: 0,
+  unavailableCount: 0,
+  availableHeadcount: 0,
+  ongoingProjectCount: 0,
+  shortStaffedProjects: [],
+  employees: [],
+  departments: [],
+  needsReview: [],
+}
+
 function stubApi(me: () => Promise<Response>, logout: () => Promise<Response> = () => reply(204, null)) {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = String(input)
     if (url === '/api/auth/me') return me()
     if (url === '/api/auth/logout') return logout()
     if (url === '/api/health') return reply(200, { status: 'UP' })
+    if (url === '/api/dashboard') return reply(200, DASHBOARD)
     return reply(404, {})
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -75,7 +89,41 @@ describe('AppRoutes', () => {
     await renderAt('/login')
 
     expect(where()).toBe('/')
+    // T#18 criterion 2: `/` is the dashboard (the reference screen moved to /design-reference).
+    expect(screen.queryByRole('heading', { level: 1, name: '대시보드' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation')).getByRole('link', { name: '대시보드' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  // T#18 criterion 2: the reference screen of T#4 at its new address, for managers only.
+  it('shows the reference screen to a manager at /design-reference', async () => {
+    const fetchMock = stubApi(() => reply(200, HR_MANAGER))
+
+    await renderAt('/design-reference')
+
+    expect(where()).toBe('/design-reference')
     expect(screen.queryByRole('heading', { name: '디자인 참조' })).toBeInTheDocument()
+    expect(calls(fetchMock, '/api/dashboard')).toBe(0)
+  })
+
+  it.each(['/', '/design-reference'])('sends an employee-only account from %s to 내 정보 without asking for the dashboard', async (path) => {
+    const fetchMock = stubApi(() => reply(200, EMPLOYEE_ONLY))
+
+    await renderAt(path)
+
+    expect(where()).toBe('/me')
+    expect(calls(fetchMock, '/api/dashboard')).toBe(0)
+  })
+
+  it.each(['/', '/design-reference'])('sends a logged-out visitor from %s to /login without asking for the dashboard', async (path) => {
+    const fetchMock = stubApi(() => reply(401, { code: 'AUTH_REQUIRED', message: '로그인이 필요합니다.' }))
+
+    await renderAt(path)
+
+    expect(where()).toBe('/login')
+    expect(calls(fetchMock, '/api/dashboard')).toBe(0)
   })
 
   it('shows only 불러오는 중… while the login check is pending', async () => {
