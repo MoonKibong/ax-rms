@@ -9,6 +9,7 @@ import EmployeeFormPage from './pages/EmployeeFormPage'
 import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
+import { ProjectAssignRoute } from './pages/ProjectAssignPage'
 import { ProjectDetailRoute } from './pages/ProjectDetailPage'
 import ProjectFormPage from './pages/ProjectFormPage'
 import ProjectListPage from './pages/ProjectListPage'
@@ -160,6 +161,14 @@ function AppRoutes() {
         element={
           <ManagerOnly user={user}>
             <EditProjectRoute user={user} />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/projects/:id/assign"
+        element={
+          <ManagerOnly user={user}>
+            <ProjectAssignRoute />
           </ManagerOnly>
         }
       />
