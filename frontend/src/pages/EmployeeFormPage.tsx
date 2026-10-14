@@ -259,6 +259,7 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
         <fieldset
           ref={skillsRef}
           className="employee-form__skills"
+          aria-invalid={skillsError ? true : undefined}
           aria-describedby={skillsError ? skillsErrorId : undefined}
         >
           <legend className="employee-form__legend">기술</legend>

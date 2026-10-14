@@ -9,6 +9,7 @@ Working rules and project context: [AGENTS.md](AGENTS.md)
 - npm 11 이상 (테스트한 버전: 11.19.0)
 - Maven은 전역 설치가 필요 없다 — `backend/mvnw`(Maven Wrapper, Maven 3.10.0)만 쓴다. 첫 실행 때 지정된 Maven 배포판을 `~/.m2/wrapper/`에 내려받는다.
 - Playwright 1.64.0 (`@playwright/test`, e2e 검사와 스크린샷) — Chromium headless shell을 쓴다.
+- perl 5 (`scripts/e2e-servers.sh`의 실행 잠금, 테스트한 버전: 5.40.1) — Ubuntu와 macOS에 기본으로 있다.
 - 글꼴: Pretendard 1.3.9 (npm `pretendard`, OFL-1.1) — 앱 번들에 들어가며 외부 CDN을 쓰지 않는다.
 - 라우터: React Router 8.4.0 (npm `react-router`).
 - 인증: Spring Security 6.5.11 (`spring-boot-starter-security`, Spring Boot 3.5.16이 정하는 버전).
@@ -104,12 +105,13 @@ make screenshots T=<N>
 
 e2e 검사와 스크린샷은 `scripts/e2e-servers.sh [--fresh-db] -- <명령>`으로 실행한다. 선택이 없으면 백엔드 DB는 한 번 만든 뒤 계속 쓰는 `backend/data/e2e.db`이고 명령 환경에 `E2E_DB`를 두지 않는다. `--fresh-db`면 DB는 이번 실행만 쓰는 `.nexi-tmp/e2e-write.db`(빈 DB라 백엔드가 시드를 넣는다)이고 명령을 `E2E_DB=fresh` 환경으로 실행한다. `frontend/e2e/write/` 스펙은 `E2E_DB=fresh`가 아니면 요청 없이 실패한다. 이 스크립트는 다음 순서로 동작한다.
 
-1. `.nexi-tmp`와 그 안의 출력 파일(`e2e-servers.pids`, `e2e-backend.log`, `e2e-preview.log`, `--fresh-db`면 `e2e-write.db`와 그 `-journal`·`-wal`·`-shm`)이 심볼릭 링크이거나 일반 파일·폴더가 아니거나 저장소 밖을 가리키면 `출력 경로 거부` 메시지를 내고 아무것도 쓰거나 띄우지 않은 채 실패한다(exit 2).
-2. 포트 `18080`(백엔드)과 `14173`(프런트엔드)이 비어 있는지 확인한다. 하나라도 쓰이고 있으면 `포트 <번호> 사용 중` 메시지를 내고 아무것도 띄우지 않은 채 실패한다. 그 포트를 쓰는 프로세스는 건드리지 않는다.
-3. `--fresh-db`면 그 DB 파일 넷을 지운다. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
-4. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db` 또는 `--fresh-db`면 `.nexi-tmp/e2e-write.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
-5. `http://localhost:14173/api/health`가 응답할 때까지 기다린 뒤 명령을 실행한다. 전체 대기는 최대 120초다. 요청마다 그 마감 시각에 끊으므로, 연결만 받고 응답하지 않는 서버가 있어도 120초를 넘지 않는다. 시간을 넘기면 이번 실행이 띄운 서버를 내리고 실패한다.
-6. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다. `--fresh-db`면 그 뒤 DB 파일 넷을 다시 지운다. 1·2단계에서 멈췄으면 아무 파일도 지우지 않는다.
+1. `.nexi-tmp`와 그 안의 출력 파일(`e2e-servers.lock`, `e2e-servers.pids`, `e2e-backend.log`, `e2e-preview.log`, `--fresh-db`면 `e2e-write.db`와 그 `-journal`·`-wal`·`-shm`)이 심볼릭 링크이거나 일반 파일·폴더가 아니거나 저장소 밖을 가리키면 `출력 경로 거부` 메시지를 내고 아무것도 쓰거나 띄우지 않은 채 실패한다(exit 2).
+2. 모든 실행(`--fresh-db` 유무, `make screenshots` 포함)이 함께 쓰는 `.nexi-tmp/e2e-servers.lock`의 배타 잠금(`flock`)을 기다리지 않고 잡는다. 다른 실행이 잡고 있으면 `다른 e2e-servers 실행이 진행 중` 메시지를 내고 아무것도 지우거나 쓰거나 띄우지 않은 채 실패한다(exit 1). 잠금은 이 스크립트 프로세스가 끝날 때(7단계의 정리 뒤) 풀리고, 강제로 끝나도 커널이 푼다. 서버·빌드·명령은 잠금을 물려받지 않는다. 그래서 두 실행이 겹치지 않고, 쓰이고 있는 DB 파일을 다른 실행이 지우지 않는다. 잠금 파일은 지우지 않는다.
+3. 포트 `18080`(백엔드)과 `14173`(프런트엔드)이 비어 있는지 확인한다. 하나라도 쓰이고 있으면 `포트 <번호> 사용 중` 메시지를 내고 아무것도 띄우지 않은 채 실패한다. 그 포트를 쓰는 프로세스는 건드리지 않는다.
+4. `--fresh-db`면 그 DB 파일 넷을 지운다. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
+5. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db` 또는 `--fresh-db`면 `.nexi-tmp/e2e-write.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
+6. `http://localhost:14173/api/health`가 응답할 때까지 기다린 뒤 명령을 실행한다. 전체 대기는 최대 120초다. 요청마다 그 마감 시각에 끊으므로, 연결만 받고 응답하지 않는 서버가 있어도 120초를 넘지 않는다. 시간을 넘기면 이번 실행이 띄운 서버를 내리고 실패한다.
+7. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다. `--fresh-db`면 그 뒤 DB 파일 넷을 다시 지운다. 1–3단계에서 멈췄으면 아무 파일도 지우지 않는다.
 
 서버 로그는 `.nexi-tmp/e2e-backend.log`, `.nexi-tmp/e2e-preview.log`에 남는다.
 
@@ -125,6 +127,7 @@ e2e 검사와 스크린샷은 `scripts/e2e-servers.sh [--fresh-db] -- <명령>`�
 | e2e 저장 검사 DB 파일 | `<root>/.nexi-tmp/e2e-write.db`, 실행마다 새로 만들고 끝나면 지운다(`-journal`·`-wal`·`-shm` 포함) | `scripts/e2e-servers.sh --fresh-db`가 `--file DB_PATH=.nexi-tmp/e2e-write.db`로 띄우고 명령에 `E2E_DB=fresh`를 준다. `npm --prefix frontend run test:e2e`(`make test`)가 공유 DB 단계 다음에 이 단계로 `frontend/e2e/write/` 스펙만 돌린다 |
 | e2e·스크린샷 프런트엔드 | `vite preview --port 14173 --strictPort`, `/api` 프록시 대상 `http://localhost:18080` | `scripts/e2e-servers.sh`가 `API_TARGET=http://localhost:18080`으로 띄운다(`frontend/vite.config.ts`; 없으면 개발 서버와 같은 `http://localhost:8080`) |
 | e2e 서버 기록 | `<root>/.nexi-tmp/e2e-servers.pids`(이번 실행이 띄운 프로세스 그룹 ID) | `scripts/e2e-servers.sh`가 실행마다 덮어쓴다 |
+| e2e 서버 잠금 | `<root>/.nexi-tmp/e2e-servers.lock`(빈 파일, 지우지 않는다) | `scripts/e2e-servers.sh`가 실행 내내 배타 잠금을 잡는다. 잡혀 있으면 다음 실행은 아무것도 건드리지 않고 거부된다 |
 | Playwright 브라우저 | `~/.cache/ms-playwright` | 격리 실행에서는 `--set PLAYWRIGHT_BROWSERS_PATH=<root>/.nexi-home/ms-playwright` |
 | 스크린샷 | `docs/screens/T<N>/` | `make screenshots T=<N>` |
 | HOME·임시 디렉터리 | `<root>/.nexi-home`, `<root>/.nexi-tmp`(스크립트 기본값) | 옵션 없이 기본값 사용 |

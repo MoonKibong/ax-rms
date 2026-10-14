@@ -397,6 +397,26 @@ describe('EmployeeFormPage errors', () => {
       expect(shown.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(skillRow(2).compareDocumentPosition(shown) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
+
+    it(`marks the skill fieldset invalid on ${code} and clears it when saving again`, async () => {
+      let call = 0
+      const held = deferred()
+      stubFetch({
+        save: () => {
+          call += 1
+          return call === 1 ? reply(400, { code, message }) : held.promise
+        },
+      })
+      await renderAt('/employees/1/edit')
+      await save()
+      expect(skillsGroup()).toHaveAttribute('aria-invalid', 'true')
+
+      await save()
+
+      expect(skillsGroup()).not.toHaveAttribute('aria-invalid')
+      expect(skillsGroup()).not.toHaveAttribute('aria-describedby')
+      expect(screen.queryByText(message)).not.toBeInTheDocument()
+    })
   }
 
   for (const [kind, answer, expected] of [
