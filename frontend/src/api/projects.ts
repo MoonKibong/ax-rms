@@ -9,6 +9,8 @@ export type ProjectSummary = {
   status: ProjectStatus
   requiredHeadcount: number
   assignedHeadcount: number
+  // D20, decided by the backend (T#32): shown as it comes, never worked out from the two headcounts.
+  understaffed: boolean
 }
 
 export const PROJECT_STATUSES: ProjectStatus[] = ['PLANNED', 'IN_PROGRESS', 'DONE', 'ON_HOLD']
