@@ -55,7 +55,7 @@ public class AssignmentService {
     requireValidPeriod(start, end);
     requireValidPercent(percent);
     Employee employee = findEmployee(employeeId);
-    Project project = findProject(projectId);
+    final Project project = findProject(projectId);
     if (employee.availabilityStatus() == AvailabilityStatus.UNAVAILABLE) {
       throw new AssignmentRuleException(
           EMPLOYEE_UNAVAILABLE, "투입 불가 직원은 새 배치를 받을 수 없습니다.");
