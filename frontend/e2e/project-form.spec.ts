@@ -321,11 +321,21 @@ test.describe('look and widths (criterion 6)', () => {
     }
   })
 
-  test('D30: the server message sits under the two dates, which take the danger border', async ({ page, request }) => {
+  test('D30: the three-assignment server message sits under the two dates, which take the danger border', async ({
+    page,
+    request,
+  }) => {
     const alpha = await alphaDetail(request)
-    const latestEnd = alpha.assignments.map((assignment) => assignment.endDate).sort().at(-1)!
-    const newEnd = plusDays(latestEnd, -1)
+    // The day before the earliest assignment end: every assignment of 알파 falls outside, so the message lists three
+    // (the contract's long message, T#9 lists at most three).
+    expect(alpha.assignments, 'the seeded assignments of 알파').toHaveLength(3)
+    const earliestEnd = alpha.assignments.map((assignment) => assignment.endDate).sort()[0]
+    const newEnd = plusDays(earliestEnd, -1)
     const message = excludedMessage(alpha, newEnd)
+    expect(message, 'the D30 message').toContain('배정 3건이')
+    for (const assignment of alpha.assignments) {
+      expect(message, 'the D30 message').toContain(`${assignment.employeeName} ${assignment.startDate} ~ ${assignment.endDate}`)
+    }
     await loginAs(page, PROJECT_MANAGER)
     await page.route(
       (url) => url.pathname === `/api/projects/${alpha.id}`,
@@ -352,6 +362,8 @@ test.describe('look and widths (criterion 6)', () => {
       expect(Math.abs(measured.left), `${width}px left edge`).toBeLessThanOrEqual(1)
       const formRight = await page.locator('main form').evaluate((form) => form.getBoundingClientRect().right)
       expect(measured.right, `${width}px inside the form`).toBeLessThanOrEqual(formRight + 0.5)
+      // The long message wraps inside the form: more than one 20px line (BRIEF §3.2 sm text).
+      expect((await shown.boundingBox())!.height, `${width}px the message wraps`).toBeGreaterThanOrEqual(40)
     }
     await expectNoHorizontalOverflow(page, [1280, 1024])
   })

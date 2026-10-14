@@ -121,6 +121,7 @@ test('form-period-error-1280', async ({ page }) => {
   )
   await open(page, 1280, `/projects/${project.id}/edit`)
   expect(await title(page, '프로젝트 수정').count(), '프로젝트 수정').toBe(1)
+  await expect(title(page, '프로젝트 수정')).toBeVisible()
   await expect(nameInput(page)).toHaveValue('알파 프로젝트')
   await page.getByLabel('종료일').fill(newEnd)
   await button(page, '저장').click()
