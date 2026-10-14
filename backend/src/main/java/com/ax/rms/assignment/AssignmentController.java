@@ -1,6 +1,5 @@
-package com.ax.rms.web;
+package com.ax.rms.assignment;
 
-import com.ax.rms.assignment.AssignmentService;
 import com.ax.rms.domain.Assignment;
 import java.time.LocalDate;
 import java.util.List;

@@ -47,6 +47,24 @@ class AllocationErrorShapeTest extends AbstractApiTest {
     assertThat(errorKeys(notFound.json())).containsExactlyInAnyOrder("code", "message");
   }
 
+  @Test
+  void malformedRequestsHaveOnlyCodeAndMessage() {
+    Response[] responses = {
+      client.sendJson("POST", "/api/assignments", "{not json"),
+      client.sendJson("PATCH", "/api/assignments/abc", "{\"allocationPercent\": 40}"),
+      client.send("DELETE", "/api/assignments/abc", null, null),
+      client.get("/api/assignments/candidates"),
+      client.get(
+          "/api/assignments/candidates?projectId=1&startDate=not-a-date&endDate=2026-06-30"),
+    };
+    for (Response response : responses) {
+      assertThat(response.status()).as("status").isEqualTo(400);
+      assertThat(errorKeys(response.json()))
+          .as("keys of %s", response.body())
+          .containsExactlyInAnyOrder("code", "message");
+    }
+  }
+
   private static java.util.List<String> errorKeys(JsonNode body) {
     java.util.List<String> keys = new java.util.ArrayList<>();
     body.fieldNames().forEachRemaining(keys::add);
