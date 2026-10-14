@@ -36,7 +36,8 @@ class DashboardShortStaffedShapeTest extends AbstractApiTest {
                 null, imdoyoon, alpha, FIXED_TODAY.minusDays(1), FIXED_TODAY.plusDays(1), 20));
 
     ApiClient client = this.client();
-    assertThat(client.login("project.manager", "ProjectManager!1").status()).as("로그인 상태").isEqualTo(200);
+    Response login = client.login("project.manager", "ProjectManager!1");
+    assertThat(login.status()).as("로그인 상태").isEqualTo(200);
     Response response = client.get("/api/dashboard");
     assertThat(response.status()).as("대시보드 상태").isEqualTo(200);
     JsonNode body = response.json();
