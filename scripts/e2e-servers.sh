@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
 # T#4: run one command against freshly started e2e servers, then stop only the servers this run started.
 #
-#   scripts/e2e-servers.sh -- <command> [args...]
+#   scripts/e2e-servers.sh [--fresh-db] -- <command> [args...]
 #
-# 1. Refuses, writing and starting nothing, if .nexi-tmp or an output file in it (e2e-servers.pids, e2e-backend.log,
-#    e2e-preview.log) is a symlink, is not a regular file or folder, or resolves outside the repository.
-# 2. Fails without starting anything if port 18080 (backend) or 14173 (frontend preview) is in use; the process
-#    using it is left alone.
-# 3. Builds the frontend (npm --prefix frontend run build); a failed build starts nothing.
-# 4. Starts the backend (through scripts/nexi-isolated.sh, DB file backend/data/e2e.db) and `vite preview` of the new
-#    build, each in its own process group, and writes both group IDs to .nexi-tmp/e2e-servers.pids.
-# 5. Waits for http://localhost:14173/api/health at most 120s in total (each request is cancelled at that deadline),
+# Without --fresh-db the backend uses the shared e2e DB backend/data/e2e.db (made once, kept between runs) and the
+# command runs without E2E_DB. With --fresh-db (T#39) it uses .nexi-tmp/e2e-write.db, made empty for this run (the
+# backend seeds it, D38) and removed afterwards, and the command runs with E2E_DB=fresh.
+#
+# 1. Refuses, writing, removing and starting nothing, if .nexi-tmp or an output file in it (e2e-servers.lock,
+#    e2e-servers.pids, e2e-backend.log, e2e-preview.log, and with --fresh-db e2e-write.db and its -journal, -wal and
+#    -shm files) is a symlink, is not a regular file or folder, or resolves outside the repository.
+# 2. Takes the exclusive lock on .nexi-tmp/e2e-servers.lock that every run shares, with or without --fresh-db. If
+#    another run holds it, fails without removing, writing or starting anything. The lock is held until this process
+#    ends, after the cleanup of step 7, so two runs never overlap and a DB file in use is never removed.
+# 3. Fails without starting or removing anything if port 18080 (backend) or 14173 (frontend preview) is in use; the
+#    process using it is left alone.
+# 4. With --fresh-db, removes those four DB files. Builds the frontend (npm --prefix frontend run build); a failed
+#    build starts nothing.
+# 5. Starts the backend (through scripts/nexi-isolated.sh with its DB file) and `vite preview` of the new build, each
+#    in its own process group, and writes both group IDs to .nexi-tmp/e2e-servers.pids.
+# 6. Waits for http://localhost:14173/api/health at most 120s in total (each request is cancelled at that deadline),
 #    then runs the command from the caller's folder.
-# 6. On exit, failure, or interrupt it sends TERM to those two groups only (KILL after 10s), never by port or name.
-# Works with bash on Linux and macOS. Exit status: the command's, 2 for a refused output path or bad arguments, or 1
-# when the servers could not be prepared.
+# 7. On exit, failure, or interrupt it sends TERM to those two groups only (KILL after 10s), never by port or name;
+#    with --fresh-db it then removes the four DB files again.
+# Works with bash and perl on Linux and macOS. Exit status: the command's, 2 for a refused output path or bad
+# arguments, or 1 when the servers could not be prepared (lock held, port in use, failed build or start).
 set -u
 
 backend_port=18080
@@ -22,7 +32,11 @@ frontend_port=14173
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 log_dir="$root/.nexi-tmp"
 pid_file="$log_dir/e2e-servers.pids"
-output_files=("$pid_file" "$log_dir/e2e-backend.log" "$log_dir/e2e-preview.log")
+lock_file="$log_dir/e2e-servers.lock"
+output_files=("$lock_file" "$pid_file" "$log_dir/e2e-backend.log" "$log_dir/e2e-preview.log")
+fresh_db=.nexi-tmp/e2e-write.db
+fresh_files=("$root/$fresh_db" "$root/$fresh_db-journal" "$root/$fresh_db-wal" "$root/$fresh_db-shm")
+fresh=0
 groups=()
 
 port_in_use() {
@@ -50,6 +64,15 @@ check_output_paths() {
     [ ! -L "$path" ] || refuse_output "$path 가 심볼릭 링크입니다" || return 1
     [ ! -e "$path" ] || [ -f "$path" ] || refuse_output "$path 가 일반 파일이 아닙니다" || return 1
   done
+}
+
+# Opens the lock file on descriptor 9 and takes an exclusive flock(2) lock on it without waiting. The lock belongs to
+# the open file this shell holds, so the kernel releases it when this process ends, even when it is killed; the
+# children get no copy of descriptor 9 (`9>&-`), so none of them keeps it longer. flock(1) is not on macOS, so perl
+# takes the lock on the inherited descriptor. Status: 0 taken, 1 held by another run, other values: could not try.
+take_lock() {
+  exec 9>>"$lock_file" || return 2
+  perl -MFcntl=:flock -e 'open(my $fh, ">>&=", 9) or exit 2; flock($fh, LOCK_EX | LOCK_NB) or exit 1'
 }
 
 # Waits until <url> answers 2xx, at most <seconds> in total: every request is cancelled at the deadline, so a server
@@ -90,50 +113,85 @@ stop_servers() {
   groups=()
 }
 
+# Removes the per-run DB of --fresh-db; only those four paths, checked by check_output_paths before.
+remove_fresh_db() {
+  [ "$fresh" = 1 ] || return 0
+  rm -f -- "${fresh_files[@]}"
+}
+
+cleanup() {
+  stop_servers
+  remove_fresh_db
+}
+
 main() {
-  local caller_dir=$PWD port
-  [ "${1:-}" = "--" ] && [ $# -ge 2 ] || { echo "usage: $0 -- <command> [args...]" >&2; exit 2; }
+  local caller_dir=$PWD port db_file=backend/data/e2e.db
+  if [ "${1:-}" = "--fresh-db" ]; then
+    fresh=1
+    db_file=$fresh_db
+    output_files+=("${fresh_files[@]}")
+    shift
+  fi
+  [ "${1:-}" = "--" ] && [ $# -ge 2 ] || { echo "usage: $0 [--fresh-db] -- <command> [args...]" >&2; exit 2; }
   shift
 
   check_output_paths || exit 2
 
+  take_lock
+  case $? in
+    0) ;;
+    1)
+      echo "e2e-servers: 다른 e2e-servers 실행이 진행 중 — 그 실행이 끝난 뒤 다시 실행하세요 (이 실행은 아무것도 지우거나 띄우지 않았습니다)" >&2
+      exit 1
+      ;;
+    *)
+      echo "e2e-servers: $lock_file 잠금을 잡지 못했습니다 (perl 필요) — 아무것도 지우거나 띄우지 않았습니다" >&2
+      exit 1
+      ;;
+  esac
+
   for port in "$backend_port" "$frontend_port"; do
-    if port_in_use "$port"; then
+    if port_in_use "$port" 9>&-; then
       echo "e2e-servers: 포트 $port 사용 중 — 그 포트를 쓰는 프로세스를 끝낸 뒤 다시 실행하세요 (이 실행은 아무 서버도 띄우지 않았습니다)" >&2
       exit 1
     fi
   done
 
-  trap stop_servers EXIT
+  trap cleanup EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM
 
-  npm --prefix "$root/frontend" run build || { echo "e2e-servers: 프런트엔드 빌드 실패 — 서버를 띄우지 않았습니다" >&2; exit 1; }
+  remove_fresh_db || { echo "e2e-servers: $fresh_db 를 지우지 못했습니다 — 서버를 띄우지 않았습니다" >&2; exit 1; }
+  npm --prefix "$root/frontend" run build 9>&- || { echo "e2e-servers: 프런트엔드 빌드 실패 — 서버를 띄우지 않았습니다" >&2; exit 1; }
 
   : > "$pid_file"
   set -m
   (
     cd "$root" &&
-      exec scripts/nexi-isolated.sh --root "$root" --file DB_PATH=backend/data/e2e.db --set SERVER_PORT="$backend_port" \
+      exec scripts/nexi-isolated.sh --root "$root" --file DB_PATH="$db_file" --set SERVER_PORT="$backend_port" \
         -- ./backend/mvnw -q -f backend/pom.xml spring-boot:run
-  ) > "$log_dir/e2e-backend.log" 2>&1 &
+  ) > "$log_dir/e2e-backend.log" 2>&1 9>&- &
   groups+=("$!")
   echo "$!" >> "$pid_file"
   (
     cd "$root/frontend" &&
       API_TARGET="http://localhost:$backend_port" exec ./node_modules/.bin/vite preview --port "$frontend_port" --strictPort
-  ) > "$log_dir/e2e-preview.log" 2>&1 &
+  ) > "$log_dir/e2e-preview.log" 2>&1 9>&- &
   groups+=("$!")
   echo "$!" >> "$pid_file"
   set +m
 
-  if ! wait_for_health "http://localhost:$frontend_port/api/health" 120; then
+  if ! wait_for_health "http://localhost:$frontend_port/api/health" 120 9>&-; then
     echo "e2e-servers: 120초 안에 http://localhost:$frontend_port/api/health 응답 없음" >&2
     tail -n 20 "$log_dir/e2e-backend.log" "$log_dir/e2e-preview.log" >&2
     exit 1
   fi
 
-  (cd "$caller_dir" && "$@")
+  if [ "$fresh" = 1 ]; then
+    (cd "$caller_dir" && env E2E_DB=fresh "$@") 9>&-
+  else
+    (cd "$caller_dir" && env -u E2E_DB "$@") 9>&-
+  fi
 }
 
 # Run only when executed, so a check can `source` this file and call wait_for_health.

@@ -226,7 +226,11 @@ test.describe('the real seed (criterion 7)', () => {
       expect(await page.getByRole('heading', { level: 1, name: '박소영' }).count(), 'employee heading').toBe(1)
       const detail = await apiGet<Detail>(page, `/api/employees/${ids['박소영']}`)
       expect(await viewOf(page)).toEqual(expectedView(detail))
-      expect(await page.locator('main button').count(), 'buttons').toBe(0)
+      // T#39 criterion 8 replaces the T#38 "no button" assertion for dual.manager, an HR manager too.
+      expect(
+        await page.locator('main button').evaluateAll((buttons) => buttons.map((b) => (b.textContent ?? '').trim())),
+        'buttons',
+      ).toEqual(account === DUAL_MANAGER ? ['수정', '상태 변경'] : [])
     })
   }
 })
