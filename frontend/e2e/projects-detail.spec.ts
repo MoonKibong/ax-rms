@@ -116,7 +116,8 @@ test('a missing project says so, and addresses that are not a project go to /', 
   await expect(page.getByText('프로젝트를 찾을 수 없습니다')).toBeVisible()
   await expect(page.getByRole('link', { name: '프로젝트 목록' })).toHaveAttribute('href', '/projects')
 
-  for (const path of ['/projects/new', '/projects/abc', '/projects/5/edit']) {
+  // /projects/new and /projects/:id/edit are the forms of T#34 (project-form.spec.ts).
+  for (const path of ['/projects/abc']) {
     await open(page, 1280, path)
     expect(new URL(page.url()).pathname, path).toBe('/')
   }
