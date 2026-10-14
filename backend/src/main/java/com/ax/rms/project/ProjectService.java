@@ -1,6 +1,7 @@
 package com.ax.rms.project;
 
 import com.ax.rms.availability.AvailabilityCalculator;
+import com.ax.rms.dashboard.DashboardService;
 import com.ax.rms.domain.Assignment;
 import com.ax.rms.domain.Employee;
 import com.ax.rms.domain.ProficiencyLevel;
@@ -10,6 +11,7 @@ import com.ax.rms.domain.ProjectStatus;
 import com.ax.rms.project.ProjectRequest.SkillLineRequest;
 import com.ax.rms.repository.AssignmentRepository;
 import com.ax.rms.repository.EmployeeRepository;
+import com.ax.rms.repository.EmployeeSkillRepository;
 import com.ax.rms.repository.ProjectRepository;
 import com.ax.rms.repository.ProjectRequiredSkillLineRepository;
 import java.time.Clock;
@@ -18,8 +20,10 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +43,7 @@ public class ProjectService {
   private final ProjectRequiredSkillLineRepository skillLineRepository;
   private final AssignmentRepository assignmentRepository;
   private final EmployeeRepository employeeRepository;
+  private final EmployeeSkillRepository employeeSkillRepository;
   private final Clock clock;
   private final AvailabilityCalculator calculator = new AvailabilityCalculator();
 
@@ -48,20 +53,35 @@ public class ProjectService {
       ProjectRequiredSkillLineRepository skillLineRepository,
       AssignmentRepository assignmentRepository,
       EmployeeRepository employeeRepository,
+      EmployeeSkillRepository employeeSkillRepository,
       Clock clock) {
     this.projectRepository = projectRepository;
     this.skillLineRepository = skillLineRepository;
     this.assignmentRepository = assignmentRepository;
     this.employeeRepository = employeeRepository;
+    this.employeeSkillRepository = employeeSkillRepository;
     this.clock = clock;
   }
 
-  /** 프로젝트 목록을 {@code id} 오름차순으로 돌려준다. {@code status}가 있으면 그 상태만 돌려준다. */
+  /**
+   * 프로젝트 목록을 {@code id} 오름차순으로 돌려준다. {@code status}가 있으면 그 상태만 돌려준다. 인력 부족 여부(D20)는 전체
+   * 프로젝트로 {@link DashboardService#shortStaffedProjectIds}를 한 번 불러 얻으므로 상태 필터와 상관없다(D36).
+   */
   public List<ProjectSummary> list(String status) {
     ProjectStatus filter = status == null ? null : parseStatus(status);
     LocalDate today = LocalDate.now(clock);
+    List<Project> projects = projectRepository.findAll();
+    List<Assignment> allAssignments = assignmentRepository.findAll();
+    List<ProjectRequiredSkillLine> allLines = new ArrayList<>();
+    for (Project project : projects) {
+      allLines.addAll(skillLineRepository.findByProjectId(project.id()));
+    }
+    Set<Long> understaffed =
+        new HashSet<>(
+            DashboardService.shortStaffedProjectIds(
+                projects, allAssignments, employeeSkillRepository.findAll(), allLines, today));
     List<ProjectSummary> result = new ArrayList<>();
-    for (Project project : projectRepository.findAll()) {
+    for (Project project : projects) {
       if (filter != null && project.status() != filter) {
         continue;
       }
@@ -75,7 +95,8 @@ public class ProjectService {
               project.endDate(),
               project.status(),
               requiredHeadcount(lines),
-              assignedHeadcount(assignments, today)));
+              assignedHeadcount(assignments, today),
+              understaffed.contains(project.id())));
     }
     return result;
   }

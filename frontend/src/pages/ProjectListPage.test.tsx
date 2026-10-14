@@ -19,6 +19,7 @@ const ALPHA: ProjectSummary = {
   status: 'IN_PROGRESS',
   requiredHeadcount: 2,
   assignedHeadcount: 3,
+  understaffed: false,
 }
 const GAMMA: ProjectSummary = {
   id: 2,
@@ -28,6 +29,7 @@ const GAMMA: ProjectSummary = {
   status: 'DONE',
   requiredHeadcount: 2,
   assignedHeadcount: 0,
+  understaffed: false,
 }
 const SHORT: ProjectSummary = {
   id: 3,
@@ -37,6 +39,7 @@ const SHORT: ProjectSummary = {
   status: 'IN_PROGRESS',
   requiredHeadcount: 2,
   assignedHeadcount: 1,
+  understaffed: false,
 }
 
 function stubFetch(handler: (url: string) => Promise<Response>) {
@@ -102,6 +105,7 @@ describe('ProjectListPage', () => {
       '2026-05-16 ~ 2026-09-13',
       '2',
       '3',
+      '—',
     ])
     expect(within(rows[1]).getByText('완료')).toHaveAttribute('data-status', 'DONE')
     expect(within(rows[1]).getByRole('link', { name: '감마 프로젝트' })).toHaveAttribute('href', '/projects/2')
@@ -111,16 +115,16 @@ describe('ProjectListPage', () => {
       '기간',
       '필요 인원',
       '배치 인원',
+      '인력 부족',
     ])
   })
 
-  it('does not draw 인력 부족 or 프로젝트 등록 (D20 is a backend rule; the register button is T#16)', async () => {
+  it('does not draw 프로젝트 등록 without a project manager (T#16)', async () => {
     stubFetch(() => reply(200, [SHORT]))
 
     await renderAt('/projects')
 
     expect(screen.getAllByRole('row')).toHaveLength(2)
-    expect(screen.queryByText('인력 부족')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '프로젝트 등록' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '프로젝트 등록' })).not.toBeInTheDocument()
   })

@@ -9,6 +9,7 @@ export type Project = {
   status: 'PLANNED' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD'
   requiredHeadcount: number
   assignedHeadcount: number
+  understaffed: boolean
 }
 
 export const LONG_NAME = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKL'
@@ -22,6 +23,7 @@ export const SAMPLE: Project[] = [
     status: 'IN_PROGRESS',
     requiredHeadcount: 5,
     assignedHeadcount: 3,
+    understaffed: false,
   },
   {
     id: 8,
@@ -31,6 +33,7 @@ export const SAMPLE: Project[] = [
     status: 'DONE',
     requiredHeadcount: 2,
     assignedHeadcount: 0,
+    understaffed: false,
   },
 ]
 

@@ -13,6 +13,7 @@ import java.time.LocalDate;
  * @param status 상태
  * @param requiredHeadcount 필요 인원: 줄별 인원의 합계(D22)
  * @param assignedHeadcount 오늘 배치된 서로 다른 직원 수
+ * @param understaffed 인력 부족 여부(D20). 판정은 {@code DashboardService.shortStaffedProjectIds} 한 곳이다(D36)
  */
 public record ProjectSummary(
     long id,
@@ -21,4 +22,5 @@ public record ProjectSummary(
     LocalDate endDate,
     ProjectStatus status,
     int requiredHeadcount,
-    int assignedHeadcount) {}
+    int assignedHeadcount,
+    boolean understaffed) {}

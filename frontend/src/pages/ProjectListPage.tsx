@@ -27,6 +27,8 @@ function isStatus(value: string): value is ProjectStatus {
   return (PROJECT_STATUSES as string[]).includes(value)
 }
 
+const NONE = <span className="project-list__none">—</span>
+
 const COLUMNS: Column<ProjectSummary>[] = [
   {
     key: 'name',
@@ -41,6 +43,8 @@ const COLUMNS: Column<ProjectSummary>[] = [
   { key: 'startDate', header: '기간', render: (project) => <Period startDate={project.startDate} endDate={project.endDate} /> },
   { key: 'requiredHeadcount', header: '필요 인원', align: 'end' },
   { key: 'assignedHeadcount', header: '배치 인원', align: 'end' },
+  // T#32 (D20, D36): the backend's own answer; the screen never works it out from the two headcounts.
+  { key: 'understaffed', header: '인력 부족', render: (project) => (project.understaffed ? <Badge status="UNDERSTAFFED" /> : NONE) },
 ]
 
 function ProjectListPage() {
