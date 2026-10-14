@@ -45,3 +45,19 @@ export type ProjectDetail = {
   assignedHeadcount: number
   assignments: AssignedEmployee[]
 }
+
+// T#34: the body of POST /api/projects and PUT /api/projects/{id} (T#9). What is empty goes as null and the server
+// judges it (D33).
+export type ProjectUpsert = {
+  name: string
+  description: string | null
+  startDate: string | null
+  endDate: string | null
+  status: ProjectStatus | null
+  requiredSkills: Array<{
+    jobTitle: string
+    skillName: string
+    proficiencyLevel: ProficiencyLevel | null
+    headcount: number | null
+  }>
+}

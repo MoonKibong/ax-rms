@@ -11,7 +11,7 @@ import {
 } from '../api/employees'
 import AppShell from '../components/AppShell'
 import Button from '../components/Button'
-import ButtonLink from '../components/ButtonLink'
+import DesktopNotice from '../components/DesktopNotice'
 import SelectField, { type SelectOption } from '../components/SelectField'
 import Spinner from '../components/Spinner'
 import StateMessage from '../components/StateMessage'
@@ -333,13 +333,11 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
       <div className="employee-form-page">
         <h1 className="page__title">{mode === 'new' ? '직원 등록' : '직원 수정'}</h1>
         <div className="employee-form-page__body">{content}</div>
-        <div className="employee-form-page__notice" role="status">
-          <p className="employee-form-page__notice-title">데스크톱에서 이용해 주세요</p>
-          <p className="employee-form-page__notice-text">직원 등록·수정은 너비 1024px 이상 화면에서 할 수 있습니다.</p>
-          <ButtonLink to={back} variant="secondary">
-            {mode === 'new' ? '직원 목록으로' : '직원 상세로'}
-          </ButtonLink>
-        </div>
+        <DesktopNotice
+          text="직원 등록·수정은 너비 1024px 이상 화면에서 할 수 있습니다."
+          to={back}
+          linkLabel={mode === 'new' ? '직원 목록으로' : '직원 상세로'}
+        />
       </div>
     </AppShell>
   )
