@@ -34,7 +34,8 @@ test('login-error-360', async ({ page }) => {
 test('home-1280', async ({ page }) => {
   await loginAs(page, HR_MANAGER)
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto('/')
+  // T#18: the dashboard took `/`; this shot keeps showing the reference screen T#6 took, now at /design-reference.
+  await page.goto('/design-reference')
   await expect(page.getByText('백엔드 상태: UP')).toBeVisible()
   await expect(page.locator('header').getByText(HR_MANAGER.name, { exact: true })).toBeVisible()
   await shoot(page, 'home-1280')

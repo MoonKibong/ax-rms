@@ -95,7 +95,8 @@ describe('AppRoutes project assignment', () => {
       await renderAt(path)
 
       expect(where()).toBe('/')
-      expect(urls(fetchMock).filter((url) => url !== '/api/auth/me' && url !== '/api/health')).toEqual([])
+      // T#18: `/` is the dashboard now, so its own request is /api/dashboard (before, the reference screen's /api/health).
+      expect(urls(fetchMock).filter((url) => url !== '/api/auth/me' && url !== '/api/dashboard')).toEqual([])
     },
   )
 

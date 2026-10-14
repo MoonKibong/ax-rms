@@ -44,3 +44,9 @@
   color: var(--color-warning);
   background: var(--color-warning-bg);
 }
+
+/* T#18: 인력 부족 on the dashboard (BRIEF §3.6, D20); #32 uses it on the project list. */
+.badge[data-status='UNDERSTAFFED'] {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
