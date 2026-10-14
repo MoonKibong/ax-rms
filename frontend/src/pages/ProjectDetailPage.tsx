@@ -90,26 +90,18 @@ function ProjectDetailPage({ id }: { id: number }) {
     const { project } = state
     content = (
       <>
-        <div className="page__head">
-          <div className="project-detail__title">
-            <h1 className="page__title">{project.name}</h1>
-            <Badge status={project.status} />
-          </div>
-          {canManage ? (
-            <div className="project-detail__actions">
-              <ButtonLink to={`/projects/${project.id}/assign`}>인력 배치</ButtonLink>
-              <ButtonLink to={`/projects/${project.id}/edit`} variant="secondary" className="manage-only">
-                수정
-              </ButtonLink>
-            </div>
-          ) : null}
+        <div className="project-detail__title">
+          <h1 className="page__title">{project.name}</h1>
+          <Badge status={project.status} />
         </div>
         <p className="project-detail__period">
           {project.startDate}
           {' ~ '}
           {project.endDate}
         </p>
-        <p className="project-detail__description">{project.description ?? '—'}</p>
+        <p className={project.description === null ? 'project-detail__description project-detail__description--empty' : 'project-detail__description'}>
+          {project.description ?? '—'}
+        </p>
         <p className="project-detail__headcount">{`필요 ${project.requiredHeadcount}명 / 배치 ${project.assignedHeadcount}명`}</p>
         <section className="project-detail__section" aria-labelledby="project-detail-skills">
           <h2 id="project-detail-skills" className="project-detail__heading">
@@ -133,6 +125,14 @@ function ProjectDetailPage({ id }: { id: number }) {
             empty={<StateMessage kind="empty" title="배치된 직원이 없습니다" />}
           />
         </section>
+        {canManage ? (
+          <div className="project-detail__actions">
+            <ButtonLink to={`/projects/${project.id}/assign`}>인력 배치</ButtonLink>
+            <ButtonLink to={`/projects/${project.id}/edit`} variant="secondary" className="manage-only">
+              수정
+            </ButtonLink>
+          </div>
+        ) : null}
       </>
     )
   }

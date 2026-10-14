@@ -48,6 +48,11 @@ for (const width of [1280, 360]) {
     await expect(assigned.locator('tbody tr')).toHaveCount(3)
     expect(await assigned.locator('tbody tr td:first-child a').allInnerTexts()).toEqual(['권지안', '강민재', '박소영'])
 
+    // BRIEF 6.6 order: the button row comes after the 배치 인력 table, not beside the title.
+    const assignBox = await page.getByRole('link', { name: '인력 배치' }).boundingBox()
+    const assignedBox = await page.getByRole('region', { name: '배치 인력' }).boundingBox()
+    expect(assignBox!.y, 'button row below the 배치 인력 table').toBeGreaterThanOrEqual(assignedBox!.y + assignedBox!.height)
+
     // Tables at 1280px, cards at 360px (DataTable).
     const displays = await page.locator('main table').evaluateAll((tables) => tables.map((t) => getComputedStyle(t).display))
     expect(displays).toEqual(width === 1280 ? ['table', 'table'] : ['block', 'block'])
@@ -156,4 +161,27 @@ test('the detail with a 48-character name stays inside the screen at 1280, 1024,
     const displays = await page.locator('main table').evaluateAll((tables) => tables.map((t) => getComputedStyle(t).display))
     expect(displays, `${width}px`).toEqual([display, display])
   }
+})
+
+test('a project without a description shows — in the muted text colour, below the title', async ({ page }) => {
+  await loginAs(page, PROJECT_MANAGER)
+  const detail = {
+    id: 8,
+    name: '설명 없는 프로젝트',
+    description: null,
+    startDate: '2026-05-16',
+    endDate: '2026-09-13',
+    status: 'PLANNED',
+    requiredSkills: [],
+    requiredHeadcount: 0,
+    assignedHeadcount: 0,
+    assignments: [],
+  }
+  await page.route((url) => url.pathname === '/api/projects/8', (route) => json(route, detail))
+  await open(page, 1280, '/projects/8')
+
+  const dash = page.getByText('—', { exact: true })
+  await expect(dash).toHaveCount(1)
+  // --color-text-muted #55606E
+  expect(await dash.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(85, 96, 110)')
 })

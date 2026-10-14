@@ -176,6 +176,28 @@ describe('ProjectDetailPage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('draws the parts in the order of BRIEF 6.6, the button row last', async () => {
+    stubFetch(() => reply(200, ALPHA))
+
+    await renderDetail(DUAL_MANAGER)
+
+    const parts = [
+      screen.getByRole('heading', { level: 1, name: '알파 프로젝트' }),
+      screen.getByText('사내 포털 리뉴얼'),
+      screen.getByText('필요 5명 / 배치 3명'),
+      screen.getByRole('region', { name: '필요 역량' }),
+      screen.getByRole('region', { name: '배치 인력' }),
+      screen.getByRole('link', { name: '인력 배치' }),
+    ]
+    for (let i = 1; i < parts.length; i += 1) {
+      expect(
+        parts[i - 1].compareDocumentPosition(parts[i]) & Node.DOCUMENT_POSITION_FOLLOWING,
+        `part ${i + 1} follows part ${i}`,
+      ).toBeTruthy()
+    }
+    expect(screen.getByRole('link', { name: '수정' }).compareDocumentPosition(screen.getByRole('region', { name: '배치 인력' })) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+  })
+
   it('gives a project manager 인력 배치 and 수정 as links', async () => {
     stubFetch(() => reply(200, ALPHA))
 
