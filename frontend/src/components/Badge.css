@@ -1,0 +1,46 @@
+/* BRIEF §3.6 Badge: xs/600, padding 2px 8px, fully rounded. */
+.badge {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.badge[data-status='PLANNED'] {
+  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
+}
+
+.badge[data-status='IN_PROGRESS'] {
+  color: var(--color-primary);
+  background: var(--color-surface-subtle);
+}
+
+.badge[data-status='DONE'] {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.badge[data-status='ON_HOLD'] {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+/* T#13: employee availability (D6) and 확인 필요 (D21). */
+.badge[data-status='AVAILABLE'] {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.badge[data-status='UNAVAILABLE'] {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.badge[data-status='NEEDS_REVIEW'] {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}

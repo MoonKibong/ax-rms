@@ -4,9 +4,3 @@
   line-height: var(--line-height-xl);
   font-weight: var(--font-weight-bold);
 }
-
-.page__name {
-  margin-top: var(--space-2);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
-}

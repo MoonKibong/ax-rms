@@ -3,9 +3,11 @@ import { Navigate, Route, Routes } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
 import StateMessage from './components/StateMessage'
+import EmployeeDetailPage from './pages/EmployeeDetailPage'
+import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
-import PlaceholderPage from './pages/PlaceholderPage'
+import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
 // T#6 contract "화면과 라우팅" (D16, D25). Nothing protected is drawn until GET /api/auth/me has answered.
@@ -52,7 +54,15 @@ function AppRoutes() {
         path="/employees"
         element={
           <ManagerOnly user={user}>
-            <PlaceholderPage current="employees" title="직원" />
+            <EmployeeListPage />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/employees/:id"
+        element={
+          <ManagerOnly user={user}>
+            <EmployeeDetailPage />
           </ManagerOnly>
         }
       />
@@ -60,11 +70,11 @@ function AppRoutes() {
         path="/projects"
         element={
           <ManagerOnly user={user}>
-            <PlaceholderPage current="projects" title="프로젝트" />
+            <ProjectListPage />
           </ManagerOnly>
         }
       />
-      <Route path="/me" element={user ? <MePage user={user} /> : <Navigate to="/login" replace />} />
+      <Route path="/me" element={user ? <MePage /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={user ? homePath(user) : '/login'} replace />} />
     </Routes>
   )
