@@ -51,7 +51,9 @@ class ProjectUnderstaffedTest extends AbstractApiTest {
     for (JsonNode item : items) {
       JsonNode flag = item.get("understaffed");
       assertThat(flag).as("%s의 understaffed", item.get("name").asText()).isNotNull();
-      assertThat(flag.isBoolean()).as("%s의 understaffed는 boolean", item.get("name").asText()).isTrue();
+      assertThat(flag.isBoolean())
+          .as("%s의 understaffed는 boolean", item.get("name").asText())
+          .isTrue();
       result.put(item.get("name").asText(), flag.asBoolean());
     }
     return result;
@@ -97,7 +99,12 @@ class ProjectUnderstaffedTest extends AbstractApiTest {
     assignmentRepository()
         .insert(
             new Assignment(
-                null, employeeId, projectId, FIXED_TODAY.minusDays(1), FIXED_TODAY.plusDays(1), 20));
+                null,
+                employeeId,
+                projectId,
+                FIXED_TODAY.minusDays(1),
+                FIXED_TODAY.plusDays(1),
+                20));
   }
 
   /** 모든 프로젝트가 같은 상태 값(예상 이름 → 값)인지 확인한다. */
@@ -108,7 +115,9 @@ class ProjectUnderstaffedTest extends AbstractApiTest {
     JsonNode inProgress = listBody(client, "?status=IN_PROGRESS");
     Map<String, Boolean> filtered = flags(inProgress);
     for (Map.Entry<String, Boolean> entry : filtered.entrySet()) {
-      assertThat(entry.getValue()).as("%s: 필터 %s", when, entry.getKey()).isEqualTo(expected.get(entry.getKey()));
+      assertThat(entry.getValue())
+          .as("%s: 필터 %s", when, entry.getKey())
+          .isEqualTo(expected.get(entry.getKey()));
     }
     // 대시보드 API가 가리키는 프로젝트와 같은 집합이다(D36).
     assertThat(flaggedIds(items)).as("%s: 대시보드와 같은 프로젝트", when).isEqualTo(dashboardIds(client));
@@ -157,18 +166,21 @@ class ProjectUnderstaffedTest extends AbstractApiTest {
   @Test
   @Order(4)
   void shortStaffedCases() {
-    ApiClient client = manager();
     long alpha = projectId("알파 프로젝트");
 
     // (a) 알파의 오늘 배치를 전부 지운다 → 오늘 배치 0 < 필요 2.
     List<Assignment> todays = new ArrayList<>();
     for (Assignment assignment : assignmentRepository().findByProjectId(alpha)) {
-      if (!FIXED_TODAY.isBefore(assignment.startDate()) && !FIXED_TODAY.isAfter(assignment.endDate())) {
+      boolean today =
+          !FIXED_TODAY.isBefore(assignment.startDate())
+              && !FIXED_TODAY.isAfter(assignment.endDate());
+      if (today) {
         todays.add(assignment);
       }
     }
     assertThat(todays).as("알파의 오늘 배치").hasSize(3);
     todays.forEach(assignment -> assignmentRepository().delete(assignment.id()));
+    ApiClient client = manager();
     assertFlags(client, only("알파 프로젝트"), "(a) 배치 없음");
 
     // (b) Java가 없는 직원 둘을 오늘 포함 배정으로 더한다 → 인원은 2 = 필요 2지만 필요 역량의 기술 보유자가 없다.

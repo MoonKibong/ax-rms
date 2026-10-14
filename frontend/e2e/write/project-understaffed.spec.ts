@@ -6,7 +6,14 @@ import { settle } from '../support/layout'
 // Java and has three assigned (seed, D31). Releasing the three makes it short of people (D20); assigning two Java holders
 // makes it enough again. The list API, the dashboard API (#11) and the screen must say the same, also after a reload (D36).
 type Item = { id: number; name: string; understaffed: boolean }
-type Detail = { today: string; assignments: Array<{ assignmentId: number }> }
+type Assignment = {
+  assignmentId: number
+  employeeId: number
+  startDate: string
+  endDate: string
+  allocationPercent: number
+}
+type Detail = { today: string; assignments: Assignment[] }
 
 test.describe.configure({ mode: 'serial' })
 
@@ -58,28 +65,54 @@ test('a project short of people shows the badge, the same projects as the dashbo
   expect(detail.assignments).toHaveLength(3)
   const today = ((await (await request.get(`/api/employees/${idOf('박소영')}`)).json()) as { today: string }).today
 
-  // Release the three assignments: 0 people against the 2 that are needed.
-  for (const assignment of detail.assignments) {
-    const released = await request.delete(`/api/assignments/${assignment.assignmentId}`)
-    expect(released.status(), 'DELETE /api/assignments').toBe(204)
-  }
-  expect(await flaggedIds(request), 'list API after the release').toEqual([alpha.id])
-  expect(await dashboardIds(request), 'dashboard API after the release').toEqual([alpha.id])
-  await expectScreen(page, ['알파 프로젝트'])
-  await page.reload()
-  await page.getByRole('navigation').first().waitFor()
-  await expectScreen(page, ['알파 프로젝트'])
+  const created: number[] = []
+  try {
+    // Release the three assignments: 0 people against the 2 that are needed.
+    for (const assignment of detail.assignments) {
+      const released = await request.delete(`/api/assignments/${assignment.assignmentId}`)
+      expect(released.status(), 'DELETE /api/assignments').toBe(204)
+    }
+    expect(await flaggedIds(request), 'list API after the release').toEqual([alpha.id])
+    expect(await dashboardIds(request), 'dashboard API after the release').toEqual([alpha.id])
+    await expectScreen(page, ['알파 프로젝트'])
+    await page.reload()
+    await page.getByRole('navigation').first().waitFor()
+    await expectScreen(page, ['알파 프로젝트'])
 
-  // Two Java holders for the next ten days: enough people with the skill, so the badge goes.
-  const until = new Date(`${today}T00:00:00Z`)
-  until.setUTCDate(until.getUTCDate() + 10)
-  for (const name of ['박소영', '한지우']) {
-    const created = await request.post('/api/assignments', {
-      data: { employeeId: idOf(name), projectId: alpha.id, startDate: today, endDate: until.toISOString().slice(0, 10), allocationPercent: 20 },
-    })
-    expect(created.status(), `POST /api/assignments ${name} (${await created.text()})`).toBe(201)
+    // Two Java holders for the next ten days: enough people with the skill, so the badge goes.
+    const until = new Date(`${today}T00:00:00Z`)
+    until.setUTCDate(until.getUTCDate() + 10)
+    for (const name of ['박소영', '한지우']) {
+      const answer = await request.post('/api/assignments', {
+        data: { employeeId: idOf(name), projectId: alpha.id, startDate: today, endDate: until.toISOString().slice(0, 10), allocationPercent: 20 },
+      })
+      expect(answer.status(), `POST /api/assignments ${name} (${await answer.text()})`).toBe(201)
+      created.push(((await answer.json()) as { id: number }).id)
+    }
+    expect(await flaggedIds(request), 'list API after the assignments').toEqual([])
+    expect(await dashboardIds(request), 'dashboard API after the assignments').toEqual([])
+    await expectScreen(page, [])
+  } finally {
+    // The write specs of one run share one DB (alphabetical order): leave the alpha project as the seed made it, so a spec
+    // after this one (project-write.spec.ts counts alpha's assignments) sees the same data as before.
+    for (const id of created) {
+      await request.delete(`/api/assignments/${id}`)
+    }
+    const now = (await (await request.get(`/api/projects/${alpha.id}`)).json()) as Detail
+    if (now.assignments.length === 0) {
+      for (const original of detail.assignments) {
+        const restored = await request.post('/api/assignments', {
+          data: {
+            employeeId: original.employeeId,
+            projectId: alpha.id,
+            startDate: original.startDate,
+            endDate: original.endDate,
+            allocationPercent: original.allocationPercent,
+          },
+        })
+        expect(restored.status(), `restore ${original.employeeId} (${await restored.text()})`).toBe(201)
+      }
+    }
+    expect(await flaggedIds(request), 'after restoring the seed: nobody is short').toEqual([])
   }
-  expect(await flaggedIds(request), 'list API after the assignments').toEqual([])
-  expect(await dashboardIds(request), 'dashboard API after the assignments').toEqual([])
-  await expectScreen(page, [])
 })
