@@ -33,4 +33,5 @@ export function addDays(date: string, days: number): string {
 
 export async function expectHeading(page: Page, name: string): Promise<void> {
   await expect(page.getByRole('heading', { level: 1, name }), 'assignment headings').toHaveCount(1)
+  await expect(page.getByRole('heading', { level: 1, name }), 'assignment heading is visible').toBeVisible()
 }

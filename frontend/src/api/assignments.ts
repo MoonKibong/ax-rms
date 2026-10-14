@@ -31,21 +31,20 @@ export type PlacedFailure = { spot: FailureSpot; message: string }
 const PERCENT_CAUSES = ['ASSIGNMENT_INVALID_PERCENT', 'ASSIGNMENT_OVER_ALLOCATED']
 const PERIOD_CAUSES = ['ASSIGNMENT_REQUEST_INVALID', 'ASSIGNMENT_OUT_OF_PROJECT_PERIOD']
 
-// The server's own Korean message is shown as it is, but only an answer of this API ({code: ASSIGNMENT_…, message}) is
-// trusted with a place; anything else (a network error, Spring's own body, a 500) is the generic "저장하지 못했습니다".
+// Any answer of the server with a `code` and a `message` (an assignment rule, or AUTH_REQUIRED, AUTH_FORBIDDEN, …) keeps its
+// own Korean message; the known assignment causes stand under their input, every other one above the button. Only an answer
+// without them (a network error, Spring's own body, a bare 500) is the generic "저장하지 못했습니다".
 export function placeAssignmentFailure(failure: ApiFailure): PlacedFailure {
-  const own = failure.code?.startsWith('ASSIGNMENT_') === true && failure.message !== undefined
-  if (!own) {
+  if (failure.code === undefined || failure.message === undefined) {
     return { spot: 'form', message: SAVE_FAILED }
   }
-  const message = failure.message as string
-  if (PERCENT_CAUSES.includes(failure.code as string)) {
-    return { spot: 'percent', message }
+  if (PERCENT_CAUSES.includes(failure.code)) {
+    return { spot: 'percent', message: failure.message }
   }
-  if (PERIOD_CAUSES.includes(failure.code as string)) {
-    return { spot: 'period', message }
+  if (PERIOD_CAUSES.includes(failure.code)) {
+    return { spot: 'period', message: failure.message }
   }
-  return { spot: 'form', message }
+  return { spot: 'form', message: failure.message }
 }
 
 export type SendResult = { ok: true } | { ok: false; failure: PlacedFailure }

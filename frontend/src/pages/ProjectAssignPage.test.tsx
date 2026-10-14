@@ -393,6 +393,55 @@ describe('ProjectAssignPage assigning', () => {
   })
 })
 
+describe('ProjectAssignPage answers of the server that are not about assignments', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it.each([
+    [401, 'AUTH_REQUIRED', '로그인이 필요합니다.'],
+    [403, 'AUTH_FORBIDDEN', '이 작업을 할 권한이 없습니다.'],
+  ])('keeps the message of a %i answer (%s) above the 배치 button', async (status, code, message) => {
+    stubApi((call) => (call.method === 'POST' ? reply(status, { code, message }) : undefined))
+    await renderPage()
+    await pick('이수민')
+    fireEvent.change(percentInput(), { target: { value: '30' } })
+
+    fireEvent.click(screen.getByRole('button', { name: '배치' }))
+    await flush()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(message)
+    expect(screen.getByRole('alert')).not.toHaveTextContent('저장하지 못했습니다')
+    expect(percentInput()).not.toHaveAttribute('aria-invalid')
+    expect(percentInput()).toHaveValue(30)
+  })
+
+  it('keeps the message of such an answer above 수정 저장', async () => {
+    stubApi((call) => (call.method === 'PATCH' ? reply(403, { code: 'AUTH_FORBIDDEN', message: '이 작업을 할 권한이 없습니다.' }) : undefined))
+    await renderPage()
+    fireEvent.click(within(current().getAllByRole('row')[1]).getByRole('button', { name: '수정' }))
+    await flush()
+    fireEvent.change(percentInput(), { target: { value: '45' } })
+
+    fireEvent.click(screen.getByRole('button', { name: '수정 저장' }))
+    await flush()
+
+    expect(screen.getByRole('alert')).toHaveTextContent('이 작업을 할 권한이 없습니다.')
+  })
+
+  it('keeps the message of such an answer inside the release dialog', async () => {
+    stubApi((call) => (call.method === 'DELETE' ? reply(401, { code: 'AUTH_REQUIRED', message: '로그인이 필요합니다.' }) : undefined))
+    await renderPage()
+    fireEvent.click(within(current().getAllByRole('row')[1]).getByRole('button', { name: '해제' }))
+
+    const dialog = screen.getByRole('dialog', { name: '배치 해제' })
+    fireEvent.click(within(dialog).getByRole('button', { name: '해제' }))
+    await flush()
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('로그인이 필요합니다.')
+  })
+})
+
 describe('ProjectAssignPage modifying', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -511,6 +560,47 @@ describe('ProjectAssignPage releasing', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(gets(calls, '/api/projects/3')).toHaveLength(2)
     expect(gets(calls, '/api/assignments/candidates')).toHaveLength(2)
+  })
+
+  it('ends the edit mode when the assignment being edited is released, so no PATCH goes to the deleted one', async () => {
+    const calls = stubApi((call) => (call.method === 'DELETE' ? reply(204, null) : undefined))
+    await renderPage()
+    fireEvent.click(within(current().getAllByRole('row')[1]).getByRole('button', { name: '수정' }))
+    await flush()
+    expect(screen.getByRole('button', { name: '수정 저장' })).toBeInTheDocument()
+
+    fireEvent.click(release())
+    fireEvent.click(within(dialog()).getByRole('button', { name: '해제' }))
+    await flush()
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '수정 저장' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '배치 입력' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '배치' })).toBeInTheDocument()
+    expect(percentInput()).toHaveValue(null)
+    expect(writes(calls).map((call) => call.method)).toEqual(['DELETE'])
+  })
+
+  it('keeps the edit mode when another assignment is released', async () => {
+    const two = {
+      ...PROJECT,
+      assignments: [
+        ...PROJECT.assignments,
+        { assignmentId: 22, employeeId: 3, employeeName: '이수민', startDate: '2026-06-01', endDate: '2026-07-31', allocationPercent: 20, currentAvailability: 80 },
+      ],
+    }
+    stubApi((call) => (call.method === 'DELETE' ? reply(204, null) : call.url === '/api/projects/3' ? reply(200, two) : undefined))
+    await renderPage()
+    fireEvent.click(within(current().getAllByRole('row')[1]).getByRole('button', { name: '수정' }))
+    await flush()
+
+    fireEvent.click(within(current().getAllByRole('row')[2]).getByRole('button', { name: '해제' }))
+    fireEvent.click(within(dialog()).getByRole('button', { name: '해제' }))
+    await flush()
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '수정 저장' })).toBeInTheDocument()
+    expect(percentInput()).toHaveValue(30)
   })
 
   it('keeps the dialog open and shows the server message when the release fails', async () => {

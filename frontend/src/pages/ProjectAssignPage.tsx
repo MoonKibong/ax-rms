@@ -429,6 +429,10 @@ function ProjectAssignPage({ id }: { id: number }) {
             assignment={releasing}
             onClose={() => setReleasing(null)}
             onReleased={() => {
+              // The assignment being changed is gone: leave the edit mode, or 수정 저장 would patch a deleted one.
+              if (editing?.assignmentId === releasing.assignmentId) {
+                endEditing()
+              }
               setReleasing(null)
               setRefresh((count) => count + 1)
             }}

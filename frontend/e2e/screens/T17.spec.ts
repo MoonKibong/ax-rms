@@ -44,6 +44,7 @@ for (const width of [1280, 360]) {
     await expectHeading(page, '알파 프로젝트')
     await currentRegion(page).getByRole('button', { name: '해제' }).first().click()
     await expect(page.getByRole('dialog', { name: '배치 해제' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '배치 해제' })).toBeVisible()
     await shoot(page, `release-dialog-${width}`)
   })
 }
