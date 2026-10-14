@@ -1,0 +1,23 @@
+/* BRIEF §3.3 loading: a 24px ring in the muted text colour, turning like the loading button's (§3.1). */
+.spinner {
+  display: inline-block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--color-text-muted);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-turn 0.8s linear infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
