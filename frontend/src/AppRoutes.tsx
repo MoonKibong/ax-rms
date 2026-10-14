@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
-import { isHrManager } from './auth/roles'
+import { isHrManager, isProjectManager } from './auth/roles'
 import StateMessage from './components/StateMessage'
 import EmployeeDetailPage from './pages/EmployeeDetailPage'
 import EmployeeFormPage from './pages/EmployeeFormPage'
@@ -10,6 +10,7 @@ import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
 import { ProjectDetailRoute } from './pages/ProjectDetailPage'
+import ProjectFormPage from './pages/ProjectFormPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
@@ -39,6 +40,29 @@ function EditEmployeeRoute({ user }: { user: CurrentUser | null }) {
     <HrManagerOnly user={user} fallback={`/employees/${encodeURIComponent(id)}`}>
       <EmployeeFormPage mode="edit" />
     </HrManagerOnly>
+  )
+}
+
+// T#34 (D9): the project forms are the project manager's. Inside ManagerOnly, so this sees a manager: an HR manager goes
+// back to where the form would have led (the list, or that project's detail).
+function ProjectManagerOnly({ user, fallback, children }: { user: CurrentUser | null; fallback: string; children: ReactNode }) {
+  if (!isProjectManager(user)) {
+    return <Navigate to={fallback} replace />
+  }
+  return children
+}
+
+// /projects/:id/edit: like the detail (T#16), only a positive whole number is a project address; anything else goes
+// where "*" goes, without a request.
+function EditProjectRoute({ user }: { user: CurrentUser | null }) {
+  const { id = '' } = useParams()
+  if (!/^[1-9][0-9]*$/.test(id)) {
+    return <Navigate to="/" replace />
+  }
+  return (
+    <ProjectManagerOnly user={user} fallback={`/projects/${id}`}>
+      <ProjectFormPage mode="edit" />
+    </ProjectManagerOnly>
   )
 }
 
@@ -114,10 +138,28 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/projects/new"
+        element={
+          <ManagerOnly user={user}>
+            <ProjectManagerOnly user={user} fallback="/projects">
+              <ProjectFormPage mode="new" />
+            </ProjectManagerOnly>
+          </ManagerOnly>
+        }
+      />
+      <Route
         path="/projects/:id"
         element={
           <ManagerOnly user={user}>
             <ProjectDetailRoute />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/projects/:id/edit"
+        element={
+          <ManagerOnly user={user}>
+            <EditProjectRoute user={user} />
           </ManagerOnly>
         }
       />

@@ -65,7 +65,8 @@ describe('AppRoutes project detail', () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain('/api/projects/1')
   })
 
-  it.each(['/projects/new', '/projects/abc', '/projects/0', '/projects/-3', '/projects/1.5', '/projects/5/edit'])(
+  // /projects/new and /projects/:id/edit are the forms of T#34 (ProjectFormRoutes.test.tsx).
+  it.each(['/projects/abc', '/projects/0', '/projects/-3', '/projects/1.5'])(
     'sends %s to / without asking for a project',
     async (path) => {
       const fetchMock = stubApi(DUAL_MANAGER)

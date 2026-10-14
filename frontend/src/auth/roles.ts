@@ -5,3 +5,9 @@ import type { CurrentUser } from './AuthContext'
 export function isHrManager(user: CurrentUser | null | undefined): boolean {
   return Boolean(user?.roles.includes('HR_MANAGER'))
 }
+
+// T#34 (D9): 프로젝트 관리자 is an account with the PROJECT_MANAGER role (project.manager, dual.manager). Only it registers
+// and edits projects; the screen sends anyone else away from the forms, and the server refuses their writes.
+export function isProjectManager(user: CurrentUser | null | undefined): boolean {
+  return Boolean(user?.roles.includes('PROJECT_MANAGER'))
+}
