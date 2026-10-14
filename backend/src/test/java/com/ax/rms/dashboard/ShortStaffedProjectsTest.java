@@ -47,7 +47,7 @@ class ShortStaffedProjectsTest {
         DashboardService.shortStaffedProjectIds(
             List.of(p1),
             List.of(assignment(1L, 1L, 1L, 50)),
-            List.of(),
+            List.of(skill(1L, 1L, "Java")),
             List.of(line(1L, 1L, "Java", 2)),
             TODAY);
     assertThat(ids).containsExactly(1L);

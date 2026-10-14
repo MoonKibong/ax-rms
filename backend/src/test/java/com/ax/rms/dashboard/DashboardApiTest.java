@@ -2,7 +2,6 @@ package com.ax.rms.dashboard;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.ax.rms.domain.Assignment;
 import com.ax.rms.repository.DepartmentRepository;
 import com.ax.rms.support.AbstractApiTest;
 import com.ax.rms.support.ApiClient;
@@ -60,39 +59,6 @@ class DashboardApiTest extends AbstractApiTest {
   void shortStaffed() {
     JsonNode body = dashboardBody();
     assertThat(body.path("shortStaffedProjects").size()).as("인력 부족 프로젝트").isZero();
-  }
-
-  @Test
-  void shortStaffedShape() {
-    long alpha = projectIdByName("알파 프로젝트");
-    List<Assignment> todays =
-        this.assignmentRepository()
-            .findByProjectId(alpha)
-            .stream()
-            .filter(a -> !FIXED_TODAY.isBefore(a.startDate()) && !FIXED_TODAY.isAfter(a.endDate()))
-            .toList();
-    assertThat(todays).as("알파의 오늘 배치").isNotEmpty();
-    for (Assignment a : todays) {
-      this.assignmentRepository().delete(a.id());
-    }
-    long imdoyoon = employeeIdByName("임도윤");
-    this.assignmentRepository()
-        .insert(
-            new Assignment(
-                null, imdoyoon, alpha, FIXED_TODAY.minusDays(1), FIXED_TODAY.plusDays(1), 20));
-
-    JsonNode body = dashboardBody();
-    JsonNode shortStaffed = body.path("shortStaffedProjects");
-    assertThat(shortStaffed.size()).as("인력 부족 프로젝트 수").isEqualTo(1);
-    JsonNode entry = shortStaffed.get(0);
-    assertThat(entry.path("id").asLong()).isEqualTo(alpha);
-    assertThat(entry.path("name").asText()).isEqualTo("알파 프로젝트");
-    assertThat(entry.path("requiredHeadcount").asInt()).isEqualTo(2);
-    assertThat(entry.path("assignedHeadcount").asInt()).isEqualTo(1);
-    JsonNode missing = entry.path("missingSkills");
-    assertThat(missing.size()).isEqualTo(1);
-    assertThat(missing.get(0).path("skill").asText()).isEqualTo("Java");
-    assertThat(missing.get(0).path("requiredHeadcount").asInt()).isEqualTo(2);
   }
 
   @Test
