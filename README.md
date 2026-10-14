@@ -75,7 +75,7 @@ npm --prefix frontend run dev
 | `GET /api/health`, `POST /api/auth/login` | 허용 | 허용 | 허용 | 허용 | 허용 |
 | `GET /api/auth/me`, `POST /api/auth/logout` | 401 | 허용 | 허용 | 허용 | 허용 |
 | `GET /api/me/**` (본인 데이터, 경로에 ID 없음) | 401 | 허용 | 허용 | 허용 | 허용 |
-| `GET /api/employees/**`, `/api/projects/**`, `/api/assignments/**`, `/api/dashboard/**` | 401 | 403 | 허용 | 허용 | 허용 |
+| `GET /api/employees/**`, `/api/projects/**`, `/api/assignments/**`, `/api/dashboard/**`, `/api/departments/**` | 401 | 403 | 허용 | 허용 | 허용 |
 | `POST`·`PUT`·`PATCH`·`DELETE /api/employees/**` | 401 | 403 | 허용 | 403 | 허용 |
 | `POST`·`PUT`·`PATCH`·`DELETE /api/projects/**`, `/api/assignments/**` | 401 | 403 | 403 | 허용 | 허용 |
 | 그 밖의 모든 요청 | 401 | 403 | 403 | 403 | 403 |
@@ -90,7 +90,7 @@ make test
 make lint
 ```
 
-`make test`는 백엔드 테스트, Vitest, 그리고 e2e 검사(`npm --prefix frontend run test:e2e`, Playwright)를 차례로 실행한다. e2e 검사는 아래 "e2e 서버"대로 자기 서버를 띄우고 내린다. 백엔드는 Tomcat이 뜬 뒤에 시드를 넣으므로, Playwright `globalSetup`(`frontend/e2e/global-setup.ts`)이 데모 계정 로그인이 될 때까지 최대 30초 기다린 뒤 검사를 시작한다. 로그인이 필요한 화면의 e2e·스크린샷은 `frontend/e2e/support/auth.ts`의 `loginAs`로 먼저 로그인한다.
+`make test`는 백엔드 테스트, Vitest, 그리고 e2e 검사(`npm --prefix frontend run test:e2e`, Playwright)를 차례로 실행한다. e2e 검사는 아래 "e2e 서버"대로 자기 서버를 띄우고 내린다. 두 단계다: 공유 DB(`backend/data/e2e.db`)로 `e2e` 프로젝트를 돌린 뒤, `--fresh-db`의 실행별 DB로 실제 저장 검사(`frontend/e2e/write/`, `e2e-write` 프로젝트)를 돌린다. 공유 DB 단계의 스펙은 직원 쓰기를 서버에 보내지 않는다. 백엔드는 Tomcat이 뜬 뒤에 시드를 넣으므로, Playwright `globalSetup`(`frontend/e2e/global-setup.ts`)이 데모 계정 로그인이 될 때까지 최대 30초 기다린 뒤 검사를 시작한다. 로그인이 필요한 화면의 e2e·스크린샷은 `frontend/e2e/support/auth.ts`의 `loginAs`로 먼저 로그인한다.
 
 ## 스크린샷
 
@@ -102,14 +102,14 @@ make screenshots T=<N>
 
 ## e2e 서버 — `scripts/e2e-servers.sh`
 
-e2e 검사와 스크린샷은 `scripts/e2e-servers.sh -- <명령>`으로 실행한다. 이 스크립트는 다음 순서로 동작한다.
+e2e 검사와 스크린샷은 `scripts/e2e-servers.sh [--fresh-db] -- <명령>`으로 실행한다. 선택이 없으면 백엔드 DB는 한 번 만든 뒤 계속 쓰는 `backend/data/e2e.db`이고 명령 환경에 `E2E_DB`를 두지 않는다. `--fresh-db`면 DB는 이번 실행만 쓰는 `.nexi-tmp/e2e-write.db`(빈 DB라 백엔드가 시드를 넣는다)이고 명령을 `E2E_DB=fresh` 환경으로 실행한다. `frontend/e2e/write/` 스펙은 `E2E_DB=fresh`가 아니면 요청 없이 실패한다. 이 스크립트는 다음 순서로 동작한다.
 
-1. `.nexi-tmp`와 그 안의 출력 파일(`e2e-servers.pids`, `e2e-backend.log`, `e2e-preview.log`)이 심볼릭 링크이거나 일반 파일·폴더가 아니거나 저장소 밖을 가리키면 `출력 경로 거부` 메시지를 내고 아무것도 쓰거나 띄우지 않은 채 실패한다(exit 2).
+1. `.nexi-tmp`와 그 안의 출력 파일(`e2e-servers.pids`, `e2e-backend.log`, `e2e-preview.log`, `--fresh-db`면 `e2e-write.db`와 그 `-journal`·`-wal`·`-shm`)이 심볼릭 링크이거나 일반 파일·폴더가 아니거나 저장소 밖을 가리키면 `출력 경로 거부` 메시지를 내고 아무것도 쓰거나 띄우지 않은 채 실패한다(exit 2).
 2. 포트 `18080`(백엔드)과 `14173`(프런트엔드)이 비어 있는지 확인한다. 하나라도 쓰이고 있으면 `포트 <번호> 사용 중` 메시지를 내고 아무것도 띄우지 않은 채 실패한다. 그 포트를 쓰는 프로세스는 건드리지 않는다.
-3. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
-4. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
+3. `--fresh-db`면 그 DB 파일 넷을 지운다. `npm --prefix frontend run build`로 지금 소스를 빌드한다. 실패하면 서버를 띄우지 않는다.
+4. 백엔드(`scripts/nexi-isolated.sh`, DB 파일 `backend/data/e2e.db` 또는 `--fresh-db`면 `.nexi-tmp/e2e-write.db`, 포트 18080)와 방금 빌드한 프런트엔드의 `vite preview`(포트 14173, `/api`는 `API_TARGET=http://localhost:18080`으로 프록시)를 각각 자기 프로세스 그룹으로 띄우고, 두 그룹 ID를 `.nexi-tmp/e2e-servers.pids`에 적는다.
 5. `http://localhost:14173/api/health`가 응답할 때까지 기다린 뒤 명령을 실행한다. 전체 대기는 최대 120초다. 요청마다 그 마감 시각에 끊으므로, 연결만 받고 응답하지 않는 서버가 있어도 120초를 넘지 않는다. 시간을 넘기면 이번 실행이 띄운 서버를 내리고 실패한다.
-6. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다.
+6. 끝나면(성공·실패·Ctrl-C·TERM) 기록한 두 그룹에만 TERM을 보내고, 10초 안에 끝나지 않으면 KILL을 보낸다. 포트나 이름으로 프로세스를 찾아 죽이지 않는다. `--fresh-db`면 그 뒤 DB 파일 넷을 다시 지운다. 1·2단계에서 멈췄으면 아무 파일도 지우지 않는다.
 
 서버 로그는 `.nexi-tmp/e2e-backend.log`, `.nexi-tmp/e2e-preview.log`에 남는다.
 
@@ -122,6 +122,7 @@ e2e 검사와 스크린샷은 `scripts/e2e-servers.sh -- <명령>`으로 실행�
 | SQLite DB 파일 | `<root>/backend/data/app.db` | `--file DB_PATH=backend/data/app.db` → 환경변수 `DB_PATH`에 `<root>` 안의 절대경로가 들어감(`application.yml`의 `spring.datasource.url: jdbc:sqlite:${DB_PATH:./data/app.db}`가 이를 읽는다) |
 | 백엔드 서버 포트 | 테스트: `0`(OS가 빈 포트 자동 할당). 이 README대로 앱을 띄울 때: `8080`(고정값). e2e·스크린샷: `18080` | 테스트: `--set SERVER_PORT=0`; 데모 실행: `--set SERVER_PORT=8080`; e2e·스크린샷: `scripts/e2e-servers.sh`가 `--set SERVER_PORT=18080`으로 띄운다 |
 | e2e·스크린샷 DB 파일 | `<root>/backend/data/e2e.db` | `scripts/e2e-servers.sh`가 `--file DB_PATH=backend/data/e2e.db`로 띄운다 |
+| e2e 저장 검사 DB 파일 | `<root>/.nexi-tmp/e2e-write.db`, 실행마다 새로 만들고 끝나면 지운다(`-journal`·`-wal`·`-shm` 포함) | `scripts/e2e-servers.sh --fresh-db`가 `--file DB_PATH=.nexi-tmp/e2e-write.db`로 띄우고 명령에 `E2E_DB=fresh`를 준다. `npm --prefix frontend run test:e2e`(`make test`)가 공유 DB 단계 다음에 이 단계로 `frontend/e2e/write/` 스펙만 돌린다 |
 | e2e·스크린샷 프런트엔드 | `vite preview --port 14173 --strictPort`, `/api` 프록시 대상 `http://localhost:18080` | `scripts/e2e-servers.sh`가 `API_TARGET=http://localhost:18080`으로 띄운다(`frontend/vite.config.ts`; 없으면 개발 서버와 같은 `http://localhost:8080`) |
 | e2e 서버 기록 | `<root>/.nexi-tmp/e2e-servers.pids`(이번 실행이 띄운 프로세스 그룹 ID) | `scripts/e2e-servers.sh`가 실행마다 덮어쓴다 |
 | Playwright 브라우저 | `~/.cache/ms-playwright` | 격리 실행에서는 `--set PLAYWRIGHT_BROWSERS_PATH=<root>/.nexi-home/ms-playwright` |

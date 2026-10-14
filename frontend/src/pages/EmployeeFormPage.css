@@ -1,0 +1,111 @@
+/* T#39 employee registration and edit (BRIEF §6.4 form; widths and gaps are the contract's 제안): the title, then the
+   form in one column of at most 560px, fields 16px apart. Below 1024px the form is hidden and the desktop notice shows
+   instead (D29). */
+.employee-form-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 560px;
+}
+
+.employee-form__skills {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.employee-form__legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.employee-form__skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* One skill row: the name takes the rest, 숙련도 140px, then 삭제, 8px apart, the button on the inputs' line. */
+.employee-form__skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.employee-form .employee-form__add-skill {
+  align-self: flex-start;
+}
+
+.employee-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* BRIEF §3.3 loading: the spinner and "불러오는 중…" in the middle of the content's place. */
+.employee-form-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.employee-form-page__loading-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+/* The desktop notice: the StateMessage block without an icon (BRIEF §3.4 look). */
+.employee-form-page__notice {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.employee-form-page__notice-title {
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.employee-form-page__notice-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.employee-form-page__notice-link {
+  text-decoration: none;
+}
+
+@media (max-width: 1023px) {
+  .employee-form-page__body {
+    display: none;
+  }
+
+  .employee-form-page__notice {
+    display: flex;
+  }
+}
