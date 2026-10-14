@@ -1,0 +1,100 @@
+/* T#34 project registration and edit (BRIEF §6.6 form; widths and gaps are the contract's 제안): the title, then the
+   form in one column of at most 720px, fields 16px apart. 720px lets a required-skill row (직무, 기술, 숙련도, 인원, 삭제)
+   stay on one line. Below 1024px the form is hidden and the desktop notice shows instead (D29). */
+.project-form-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 720px;
+}
+
+.project-form__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-form__legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 기간: 시작일 and 종료일 side by side, 8px apart. */
+.project-form__period {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+/* A period error (D30 among them) is about both dates: both take the danger border, the message sits 4px under them. */
+.project-form__group[aria-invalid='true'] .project-form__period .field__input {
+  border-color: var(--color-danger);
+}
+
+.project-form__group-error {
+  margin-top: var(--space-1);
+}
+
+.project-form__skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* One required-skill row: 직무 and 기술 share the rest, 숙련도 140px, 인원 88px, then 삭제, 8px apart, the button on the
+   inputs' line. */
+.project-form__skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 140px 88px auto;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+/* The rows' message sits 4px under the last row, like a field's error. */
+.project-form__skill + .field__error {
+  margin-top: calc(var(--space-1) - var(--space-2));
+}
+
+.project-form .project-form__add-skill {
+  align-self: flex-start;
+}
+
+.project-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* BRIEF §3.3 loading: the spinner and "불러오는 중…" in the middle of the content's place. */
+.project-form-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.project-form-page__loading-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+/* The desktop notice (components/DesktopNotice) shows instead. */
+@media (max-width: 1023px) {
+  .project-form-page__body {
+    display: none;
+  }
+}
