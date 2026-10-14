@@ -1,0 +1,14 @@
+.project-list__date {
+  white-space: nowrap;
+}
+
+/* Cards (<1024px, the same breakpoint as DataTable): "2026-05-16 ~" and the end date under it, both on the right. */
+@media (max-width: 1023px) {
+  .project-list__period {
+    text-align: end;
+  }
+
+  .project-list__date--end {
+    display: block;
+  }
+}

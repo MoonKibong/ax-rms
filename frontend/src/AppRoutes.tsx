@@ -9,6 +9,7 @@ import EmployeeFormPage from './pages/EmployeeFormPage'
 import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
+import { ProjectDetailRoute } from './pages/ProjectDetailPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
@@ -109,6 +110,14 @@ function AppRoutes() {
         element={
           <ManagerOnly user={user}>
             <ProjectListPage />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ManagerOnly user={user}>
+            <ProjectDetailRoute />
           </ManagerOnly>
         }
       />
