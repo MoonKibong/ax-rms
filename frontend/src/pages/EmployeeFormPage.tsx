@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import type { Department } from '../api/departments'
 import {
   SAVE_FAILED,
@@ -11,6 +11,7 @@ import {
 } from '../api/employees'
 import AppShell from '../components/AppShell'
 import Button from '../components/Button'
+import ButtonLink from '../components/ButtonLink'
 import SelectField, { type SelectOption } from '../components/SelectField'
 import Spinner from '../components/Spinner'
 import StateMessage from '../components/StateMessage'
@@ -334,9 +335,9 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
         <div className="employee-form-page__notice" role="status">
           <p className="employee-form-page__notice-title">데스크톱에서 이용해 주세요</p>
           <p className="employee-form-page__notice-text">직원 등록·수정은 너비 1024px 이상 화면에서 할 수 있습니다.</p>
-          <Link className="button employee-form-page__notice-link" data-variant="secondary" to={back}>
+          <ButtonLink to={back} variant="secondary">
             {mode === 'new' ? '직원 목록으로' : '직원 상세로'}
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     </AppShell>

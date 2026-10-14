@@ -96,10 +96,6 @@
   line-height: var(--line-height-sm);
 }
 
-.employee-form-page__notice-link {
-  text-decoration: none;
-}
-
 @media (max-width: 1023px) {
   .employee-form-page__body {
     display: none;
