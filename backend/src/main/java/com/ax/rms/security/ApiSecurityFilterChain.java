@@ -88,7 +88,8 @@ public class ApiSecurityFilterChain implements SecurityFilterChain {
             "/api/employees/**",
             "/api/projects/**",
             "/api/assignments/**",
-            "/api/dashboard/**")
+            "/api/dashboard/**",
+            "/api/departments/**")
         .hasAnyRole(HR_MANAGER, PROJECT_MANAGER);
     for (HttpMethod write : WRITES) {
       auth.requestMatchers(write, "/api/employees/**")

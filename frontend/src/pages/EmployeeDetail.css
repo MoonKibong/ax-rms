@@ -112,3 +112,23 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+/* T#39, BRIEF §6.4 item 5: the HR manager's 수정 and 상태 변경, 8px apart, from 1024px up only (D29). */
+.employee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 1023px) {
+  .employee-actions {
+    display: none;
+  }
+}
+
+/* The status change dialog's fields, one column 16px apart. */
+.status-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

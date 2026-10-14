@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { Navigate, Route, Routes, useParams } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
+import { isHrManager } from './auth/roles'
 import StateMessage from './components/StateMessage'
 import EmployeeDetailPage from './pages/EmployeeDetailPage'
+import EmployeeFormPage from './pages/EmployeeFormPage'
 import EmployeeListPage from './pages/EmployeeListPage'
 import LoginPage from './pages/LoginPage'
 import MePage from './pages/MePage'
+import { ProjectAssignRoute } from './pages/ProjectAssignPage'
 import { ProjectDetailRoute } from './pages/ProjectDetailPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
@@ -20,6 +23,24 @@ function ManagerOnly({ user, children }: { user: CurrentUser | null; children: R
     return <Navigate to="/me" replace />
   }
   return children
+}
+
+// T#39 (D9): the employee forms are the HR manager's. Inside ManagerOnly, so this sees a manager: a project manager
+// goes back to where the form would have led (the list, or that employee's detail).
+function HrManagerOnly({ user, fallback, children }: { user: CurrentUser | null; fallback: string; children: ReactNode }) {
+  if (!isHrManager(user)) {
+    return <Navigate to={fallback} replace />
+  }
+  return children
+}
+
+function EditEmployeeRoute({ user }: { user: CurrentUser | null }) {
+  const { id = '' } = useParams()
+  return (
+    <HrManagerOnly user={user} fallback={`/employees/${encodeURIComponent(id)}`}>
+      <EmployeeFormPage mode="edit" />
+    </HrManagerOnly>
+  )
 }
 
 function AppRoutes() {
@@ -60,10 +81,28 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/employees/new"
+        element={
+          <ManagerOnly user={user}>
+            <HrManagerOnly user={user} fallback="/employees">
+              <EmployeeFormPage mode="new" />
+            </HrManagerOnly>
+          </ManagerOnly>
+        }
+      />
+      <Route
         path="/employees/:id"
         element={
           <ManagerOnly user={user}>
             <EmployeeDetailPage />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/employees/:id/edit"
+        element={
+          <ManagerOnly user={user}>
+            <EditEmployeeRoute user={user} />
           </ManagerOnly>
         }
       />
@@ -80,6 +119,14 @@ function AppRoutes() {
         element={
           <ManagerOnly user={user}>
             <ProjectDetailRoute />
+          </ManagerOnly>
+        }
+      />
+      <Route
+        path="/projects/:id/assign"
+        element={
+          <ManagerOnly user={user}>
+            <ProjectAssignRoute />
           </ManagerOnly>
         }
       />

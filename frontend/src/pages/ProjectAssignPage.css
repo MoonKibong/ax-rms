@@ -1,0 +1,158 @@
+/* T#17 assignment screen (BRIEF 6.7): one column at every width, sections 24px apart; the tables become cards below 1024px
+   (DataTable). Widths and gaps not in BRIEF are the contract's 제안. */
+.assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.assign__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.assign__summary .page__title {
+  overflow-wrap: anywhere;
+}
+
+.assign__period {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.assign__link {
+  align-self: flex-start;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.assign__link:hover {
+  text-decoration: underline;
+}
+
+.assign__range {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.assign__legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.assign__range-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.assign__range-fields .field {
+  flex: 1 1 160px;
+  max-width: 240px;
+}
+
+.assign__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.assign__heading {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.assign__loading,
+.assign__note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.assign__search {
+  max-width: 320px;
+}
+
+.assign__candidates {
+  min-width: 0;
+}
+
+.assign__candidates[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+/* The name is the pick button: it reads as a link, the picked one is dark and underlined and its row is shaded. */
+.assign__pick {
+  max-width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.assign__pick:hover {
+  text-decoration: underline;
+}
+
+.assign__pick[aria-pressed='true'] {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.assign__pick:disabled {
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.data-table tr:has(.assign__pick[aria-pressed='true']) {
+  background: var(--color-surface-subtle);
+}
+
+.assign__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 320px;
+}
+
+.assign__actions,
+.assign__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.assign__missing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.assign__release-target {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-md);
+  overflow-wrap: anywhere;
+}

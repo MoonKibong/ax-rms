@@ -32,4 +32,40 @@ describe('SelectField', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('3')
   })
+
+  // T#39 criterion 2: the TextField error and required rules for a select box (BRIEF §3.2).
+  it('shows an error right under the select with the warning icon, and the select points to it', () => {
+    render(
+      <SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} error="부서를 찾을 수 없습니다." />,
+    )
+
+    const message = screen.getByText('부서를 찾을 수 없습니다.')
+    const select = screen.getByRole('combobox', { name: '부서' })
+    expect(select).toHaveAttribute('aria-invalid', 'true')
+    expect(select.getAttribute('aria-describedby')).toBe(message.id)
+    expect(message.id).not.toBe('')
+    expect(select).toHaveAccessibleDescription('부서를 찾을 수 없습니다.')
+    expect(message.querySelector('svg')).not.toBeNull()
+    expect(select.nextElementSibling).toBe(message)
+  })
+
+  it('marks a required select with an aria-hidden star after the label and the required attribute', () => {
+    render(<SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} required />)
+
+    const select = screen.getByRole('combobox', { name: '부서' })
+    expect(select).toBeRequired()
+    const star = screen.getByText('*')
+    expect(star).toHaveAttribute('aria-hidden', 'true')
+    expect(star.closest('label')).toHaveAttribute('for', select.id)
+  })
+
+  it('has no error or required marks when neither is given', () => {
+    render(<SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} />)
+
+    const select = screen.getByRole('combobox', { name: '부서' })
+    expect(select).not.toHaveAttribute('aria-invalid')
+    expect(select).not.toHaveAttribute('aria-describedby')
+    expect(select).not.toBeRequired()
+    expect(screen.queryByText('*')).not.toBeInTheDocument()
+  })
 })

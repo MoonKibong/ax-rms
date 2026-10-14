@@ -34,3 +34,8 @@
   color: var(--color-disabled-text);
   cursor: not-allowed;
 }
+
+/* T#39, BRIEF §3.2 error: the border turns danger like a TextField in error. */
+.select-field__select[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
