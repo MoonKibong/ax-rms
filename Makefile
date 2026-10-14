@@ -16,4 +16,4 @@ lint:
 screenshots:
 	@if [ -z "$(T)" ]; then echo "screenshots: T가 필요합니다 (예: make screenshots T=4)" >&2; exit 2; fi
 	@if [ ! -f "frontend/e2e/screens/T$(T).spec.ts" ]; then echo "screenshots: frontend/e2e/screens/T$(T).spec.ts 없음" >&2; exit 2; fi
-	scripts/e2e-servers.sh -- npm --prefix frontend run screenshots -- e2e/screens/T$(T).spec.ts
+	scripts/e2e-servers.sh --fresh-db -- npm --prefix frontend run screenshots -- e2e/screens/T$(T).spec.ts
