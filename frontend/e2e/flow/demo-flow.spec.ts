@@ -286,9 +286,11 @@ for (const width of [1280, 360]) {
     ])
     await expectFits(page, width)
 
-    // 4 갱신: the employee detail, the project list and detail, and the dashboard show the values asked for again.
+    // 4 갱신: the employee detail and list, the project list and detail, and the dashboard show the values asked for again.
     await currentRegion(page).getByRole('link', { name: PARK, exact: true }).click()
     await expectParkDetail(page, request, width, parkId, SEED.parkAfterAssign, assignedPeriod)
+    await menu(page, '직원')
+    await expectEmployeeList(page, request, width, SEED.parkAfterAssign)
     await menu(page, '프로젝트')
     await expectProjectList(page, request, width, betaId, SEED.betaAssigned + 1)
     await page.getByRole('link', { name: BETA, exact: true }).click()
