@@ -14,9 +14,11 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
   },
   projects: [
-    { name: 'e2e', testIgnore: ['**/screens/**', '**/write/**'] },
+    { name: 'e2e', testIgnore: ['**/screens/**', '**/write/**', '**/flow/**'] },
     { name: 'screens', testMatch: 'screens/*.spec.ts' },
     // T#39: the specs that really save, run only on the per-run DB of scripts/e2e-servers.sh --fresh-db.
     { name: 'e2e-write', testMatch: 'write/*.spec.ts' },
+    // T#19: the §10 demonstration flow, on a per-run DB of its own (only the seed, not the e2e-write saves).
+    { name: 'e2e-flow', testMatch: 'flow/*.spec.ts' },
   ],
 })
