@@ -11,6 +11,7 @@ import com.ax.rms.repository.DepartmentRepository;
 import com.ax.rms.repository.EmployeeRepository;
 import com.ax.rms.repository.ProjectRepository;
 import com.ax.rms.support.AbstractSeedTest;
+import com.ax.rms.web.ApiException;
 import java.time.LocalDate;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -103,7 +104,7 @@ class ConcurrentAssignmentTest extends AbstractSeedTest {
     try {
       assignmentService.create(employeeId, projectId, start, end, percent);
       return new Outcome(true, null);
-    } catch (AssignmentRuleException rejected) {
+    } catch (ApiException rejected) {
       return new Outcome(false, rejected.code());
     }
   }
