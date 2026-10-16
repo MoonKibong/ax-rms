@@ -13,6 +13,7 @@ import com.ax.rms.repository.DepartmentRepository;
 import com.ax.rms.repository.EmployeeRepository;
 import com.ax.rms.repository.EmployeeSkillRepository;
 import com.ax.rms.repository.ProjectRepository;
+import com.ax.rms.web.ApiException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -265,7 +266,9 @@ public class EmployeeService {
     List<EmployeeSkillRequest> skills = request.skills() == null ? List.of() : request.skills();
     Set<String> seenSkillNames = new HashSet<>();
     for (EmployeeSkillRequest skill : skills) {
-      if (isBlank(skill.skillName()) || parseProficiency(skill.proficiencyLevel()) == null) {
+      if (skill == null
+          || isBlank(skill.skillName())
+          || parseProficiency(skill.proficiencyLevel()) == null) {
         throw badRequest("EMPLOYEE_SKILL_INVALID", "기술 이름과 숙련도를 올바르게 입력하세요.");
       }
       if (!seenSkillNames.add(skill.skillName())) {
@@ -305,11 +308,11 @@ public class EmployeeService {
     return value == null || value.isBlank();
   }
 
-  private EmployeeApiException notFound() {
-    return new EmployeeApiException(HttpStatus.NOT_FOUND, "EMPLOYEE_NOT_FOUND", "직원을 찾을 수 없습니다.");
+  private ApiException notFound() {
+    return new ApiException(HttpStatus.NOT_FOUND, "EMPLOYEE_NOT_FOUND", "직원을 찾을 수 없습니다.");
   }
 
-  private EmployeeApiException badRequest(String code, String message) {
-    return new EmployeeApiException(HttpStatus.BAD_REQUEST, code, message);
+  private ApiException badRequest(String code, String message) {
+    return new ApiException(HttpStatus.BAD_REQUEST, code, message);
   }
 }
