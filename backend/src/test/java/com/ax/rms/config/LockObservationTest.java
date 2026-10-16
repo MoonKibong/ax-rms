@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.sqlite.SQLiteErrorCode;
+import org.sqlite.SQLiteException;
 
 /**
  * 잠금을 실제로 재현한다(T#54 기준 6, B#2).
@@ -22,8 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 하나가 짧게 기다렸다가 성공한다(둘 다 예외 없이 끝난다).
  *
  * <p>장기 잠금: 한 커넥션이 쓰기 잠금을 8초(목표 busy_timeout 5000ms보다 길게) 들고 있으면, 다른 커넥션의
- * 쓰기는 대략 그 busy_timeout만큼 기다린 뒤 결국 실패한다 — 걸린 시간을 재서 그 가치가 실제로 적용됐는지
- * 본다.
+ * 쓰기는 대략 그 busy_timeout만큼 기다린 뒤 {@link org.sqlite.SQLiteException}의
+ * {@link org.sqlite.SQLiteErrorCode#SQLITE_BUSY}로 끝난다 — 걸린 시간과 예외의 결과 코드를 함께 확인한다
+ * (리뷰 사유 1: 다른 종류의 {@code SQLException}이 통과해서는 안 된다).
  *
  * <p>참고(구현 중 확인한 사실): {@code transaction_mode=immediate}에서 두 커넥션의 {@code BEGIN IMMEDIATE}가
  * 부딪히는 경우, xerial sqlite-jdbc 3.53.4.0은 "짧게 쥐고 있다가 풀어주는" 인위적인 지연(예: 1~4초 유지 뒤
@@ -54,8 +57,11 @@ class LockObservationTest extends AbstractDatabaseTest {
 
   @Test
   void lockLongerThanBusyTimeoutFailsAfterRoughlyTheConfiguredTimeout() throws Exception {
-    long elapsedMillis = runWaiterAgainstLockHeldFor(8);
-    assertThat(elapsedMillis).isBetween(4_500L, 6_500L);
+    WaitResult result = runWaiterAgainstLockHeldFor(8);
+    assertThat(result.elapsedMillis()).isBetween(4_500L, 6_500L);
+    assertThat((Throwable) result.exception()).isInstanceOf(SQLiteException.class);
+    assertThat(((SQLiteException) result.exception()).getResultCode())
+        .isEqualTo(SQLiteErrorCode.SQLITE_BUSY);
   }
 
   private boolean writeOnce(CyclicBarrier barrier, String name) {
@@ -80,9 +86,9 @@ class LockObservationTest extends AbstractDatabaseTest {
    * 한 커넥션으로 {@code lockSeconds}초 동안 쓰기 잠금을 잡고 있는 동안 다른 커넥션으로 같은 테이블에 쓰기를
    * 시도한다.
    *
-   * @return 그 시도가 성공하거나 {@code SQLITE_BUSY}로 끝날 때까지 걸린 시간(ms)
+   * @return 그 시도가 걸린 시간(ms)과, 실패했다면 그 예외(성공했다면 {@code null})
    */
-  private long runWaiterAgainstLockHeldFor(int lockSeconds) throws Exception {
+  private WaitResult runWaiterAgainstLockHeldFor(int lockSeconds) throws Exception {
     ExecutorService pool = Executors.newFixedThreadPool(1);
     try (Connection holder = dataSource.getConnection()) {
       holder.setAutoCommit(false);
@@ -90,17 +96,17 @@ class LockObservationTest extends AbstractDatabaseTest {
         holderStatement.execute("insert into department(name) values ('T54잠금')");
       }
 
-      Future<Long> waiterElapsed = pool.submit(this::attemptInsertAndMeasure);
+      Future<WaitResult> waiterResult = pool.submit(this::attemptInsertAndMeasure);
       Thread.sleep(lockSeconds * 1000L);
       holder.commit();
 
-      return waiterElapsed.get(15, TimeUnit.SECONDS);
+      return waiterResult.get(15, TimeUnit.SECONDS);
     } finally {
       pool.shutdownNow();
     }
   }
 
-  private long attemptInsertAndMeasure() {
+  private WaitResult attemptInsertAndMeasure() {
     long start = System.currentTimeMillis();
     try (Connection waiter = dataSource.getConnection()) {
       waiter.setAutoCommit(false);
@@ -108,9 +114,11 @@ class LockObservationTest extends AbstractDatabaseTest {
         statement.execute("insert into department(name) values ('T54대기')");
         waiter.commit();
       }
-    } catch (SQLException expectedWhenStillLocked) {
-      // SQLITE_BUSY 자체는 여기서 실패가 아니다 — 걸린 시간만 잰다.
+      return new WaitResult(System.currentTimeMillis() - start, null);
+    } catch (SQLException exceptionWhileLocked) {
+      return new WaitResult(System.currentTimeMillis() - start, exceptionWhileLocked);
     }
-    return System.currentTimeMillis() - start;
   }
+
+  private record WaitResult(long elapsedMillis, SQLException exception) {}
 }
