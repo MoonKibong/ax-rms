@@ -1,9 +1,12 @@
-package com.ax.rms.project;
+package com.ax.rms.web;
 
 import org.springframework.http.HttpStatus;
 
-/** 프로젝트 API의 규칙 위반과 없는 리소스. 원인 코드와 한국어 메시지를 나른다(D33). */
-public class ProjectException extends RuntimeException {
+/**
+ * 업무 규칙 위반과 없는 리소스를 나르는 공통 예외(D33). 전역 {@link ApiErrorHandler}가 상태·코드·메시지 그대로
+ * {@link ApiError} 응답으로 바꾼다.
+ */
+public class ApiException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
@@ -17,7 +20,7 @@ public class ProjectException extends RuntimeException {
    * @param code 원인 코드(예: {@code PROJECT_NAME_REQUIRED})
    * @param message 사용자에게 보일 한국어 메시지
    */
-  public ProjectException(HttpStatus status, String code, String message) {
+  public ApiException(HttpStatus status, String code, String message) {
     super(message);
     this.status = status;
     this.code = code;
