@@ -409,6 +409,7 @@ describe('ProjectFormPage errors', () => {
 
       expect(field()).toHaveAttribute('aria-invalid', 'true')
       expect(field()).toHaveAccessibleDescription(message)
+      expect(field()).toHaveFocus() // T#58 criterion 5
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   }
@@ -424,8 +425,14 @@ describe('ProjectFormPage errors', () => {
 
       await save()
 
-      expect(periodGroup()).toHaveAttribute('aria-invalid', 'true')
+      // T#58 criterion 2: the two date inputs carry aria-invalid and the message; the fieldset keeps only the description.
+      for (const input of [startInput(), endInput()]) {
+        expect(input).toHaveAttribute('aria-invalid', 'true')
+        expect(input).toHaveAccessibleDescription(message)
+      }
+      expect(periodGroup()).not.toHaveAttribute('aria-invalid')
       expect(periodGroup()).toHaveAccessibleDescription(message)
+      expect(startInput()).toHaveFocus()
       const shown = within(periodGroup()).getByText(message)
       expect(follows(endInput(), shown)).toBe(true)
       expect(follows(shown, statusSelect())).toBe(true)
@@ -440,7 +447,12 @@ describe('ProjectFormPage errors', () => {
 
     await save()
 
-    expect(skillsGroup()).toHaveAttribute('aria-invalid', 'true')
+    // T#58 criterion 3: the first row's 직무 carries aria-invalid and the message; the fieldset keeps only the description.
+    const firstJob = within(skillRow(1)).getByRole('textbox', { name: '직무' })
+    expect(firstJob).toHaveAttribute('aria-invalid', 'true')
+    expect(firstJob).toHaveAccessibleDescription(message)
+    expect(firstJob).toHaveFocus()
+    expect(skillsGroup()).not.toHaveAttribute('aria-invalid')
     expect(skillsGroup()).toHaveAccessibleDescription(message)
     const shown = within(skillsGroup()).getByText(message)
     expect(follows(skillRow(2), shown)).toBe(true)
@@ -465,6 +477,7 @@ describe('ProjectFormPage errors', () => {
 
       const alert = screen.getByRole('alert')
       expect(alert).toHaveTextContent(shown)
+      expect(['INPUT', 'SELECT']).not.toContain(document.activeElement?.tagName) // T#58 criterion 5: a form-level message moves no focus
       expect(follows(alert, saveButton())).toBe(true)
       expect(follows(skillsGroup(), alert)).toBe(true)
       for (const field of [nameInput(), statusSelect(), periodGroup(), skillsGroup()]) {
@@ -486,11 +499,12 @@ describe('ProjectFormPage errors', () => {
     })
     await renderAt('/projects/1/edit')
     await save()
-    expect(periodGroup()).toHaveAttribute('aria-invalid', 'true')
+    expect(startInput()).toHaveAttribute('aria-invalid', 'true')
 
     await save()
 
-    expect(periodGroup()).not.toHaveAttribute('aria-invalid')
+    expect(startInput()).not.toHaveAttribute('aria-invalid')
+    expect(endInput()).not.toHaveAttribute('aria-invalid')
     expect(periodGroup()).not.toHaveAttribute('aria-describedby')
     expect(screen.queryByText(D30_MESSAGE)).not.toBeInTheDocument()
   })
@@ -504,7 +518,13 @@ describe('ProjectFormPage errors', () => {
       await save()
 
       expect(writes(calls)).toEqual([])
-      expect(skillsGroup()).toHaveAttribute('aria-invalid', 'true')
+      // T#58 criterion 3: the row's 인원 carries aria-invalid and the message.
+      const headcountInput = within(skillRow(2)).getByRole('spinbutton', { name: '인원' })
+      expect(headcountInput).toHaveAttribute('aria-invalid', 'true')
+      expect(headcountInput).toHaveAccessibleDescription(HEADCOUNT_NOT_WHOLE)
+      expect(headcountInput).toHaveFocus()
+      expect(within(skillRow(1)).getByRole('spinbutton', { name: '인원' })).not.toHaveAttribute('aria-invalid')
+      expect(skillsGroup()).not.toHaveAttribute('aria-invalid')
       expect(skillsGroup()).toHaveAccessibleDescription(HEADCOUNT_NOT_WHOLE)
     })
   }

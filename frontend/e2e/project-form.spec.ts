@@ -392,6 +392,49 @@ test.describe('look and widths (criterion 6)', () => {
     expect(Math.abs(measured.left)).toBeLessThanOrEqual(1)
   })
 
+  // T#58 criterion 8: the real server refuses the inverted period with 400 (nothing is saved), both dates carry
+  // aria-invalid and the message, and the focus is on the start date.
+  // The form is hidden below 1024px (D29), so the widths are the two on which it shows; 360px would show the notice.
+  for (const width of [1280, 1024]) {
+    test(`a period the server refuses is tied to both dates and takes the focus at ${width}px`, async ({ page }) => {
+      await loginAs(page, PROJECT_MANAGER)
+      let status = 0
+      await page.route(
+        (url) => url.pathname === '/api/projects',
+        async (route) => {
+          if (route.request().method() !== 'POST') {
+            return route.fallback()
+          }
+          // The real server answers this one: an end date before the start date is a 400 and writes nothing.
+          const response = await route.fetch()
+          status = response.status()
+          return route.fulfill({ response })
+        },
+      )
+      await open(page, 1280, '/projects/new')
+      await nameInput(page).fill('포커스 확인')
+      await startInput(page).fill('2026-12-31')
+      await endInput(page).fill('2026-01-01')
+      await statusSelect(page).selectOption({ label: '진행 중' })
+      await button(page, '저장').click()
+      await expect(startInput(page)).toHaveAttribute('aria-invalid', 'true')
+      await resize(page, width)
+
+      expect(status, 'the real server refuses').toBe(400)
+      await expect(endInput(page)).toHaveAttribute('aria-invalid', 'true')
+      await expect(startInput(page)).toBeFocused()
+      const messageId = await endInput(page).getAttribute('aria-describedby')
+      expect(await startInput(page).getAttribute('aria-describedby')).toBe(messageId)
+      const message = page.locator(`[id="${messageId}"]`)
+      await expect(message).toBeVisible()
+      const measured = await messageUnder([startInput(page), endInput(page)], message)
+      expect(measured.gap, `${width}px gap`).toBeGreaterThanOrEqual(0)
+      expect(measured.gap, `${width}px gap`).toBeLessThanOrEqual(4)
+      expect(await message.evaluate((el) => getComputedStyle(el).color)).toBe(DANGER)
+      await expectNoHorizontalOverflow(page, [width])
+    })
+  }
+
   test('48-character values stay inside the edit form', async ({ page, request }) => {
     const alpha = await alphaDetail(request)
     await loginAs(page, PROJECT_MANAGER)

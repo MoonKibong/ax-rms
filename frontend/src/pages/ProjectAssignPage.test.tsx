@@ -294,6 +294,34 @@ describe('ProjectAssignPage assigning', () => {
     expect(writes(calls)).toEqual([])
   })
 
+  // T#58 criterion 5: a failed save puts the focus on the first input that says why.
+  it('puts the focus on the percent after a percent that is refused', async () => {
+    stubApi()
+    await renderPage()
+    await pick('이수민')
+
+    fireEvent.change(percentInput(), { target: { value: '7' } })
+    fireEvent.click(screen.getByRole('button', { name: '배치' }))
+    await flush()
+
+    expect(percentInput()).toHaveFocus()
+  })
+
+  it('puts the focus on the end date after a period that is refused, before the percent', async () => {
+    stubApi()
+    await renderPage()
+    await pick('이수민')
+    fireEvent.change(startInput(), { target: { value: '2026-10-01' } })
+    fireEvent.change(percentInput(), { target: { value: '7' } })
+
+    fireEvent.click(screen.getByRole('button', { name: '배치' }))
+    await flush()
+
+    expect(endInput()).toHaveAttribute('aria-invalid', 'true')
+    expect(percentInput()).toHaveAttribute('aria-invalid', 'true')
+    expect(endInput()).toHaveFocus()
+  })
+
   // T#53 criterion 8: a period of more than 366 days (both dates counted) is not asked for and says why under the end date.
   it('does not ask for candidates for a period of more than 366 days and says why under the end date', async () => {
     const calls = stubApi()
@@ -690,6 +718,44 @@ describe('ProjectAssignPage states', () => {
     await flush()
 
     expect(gets(calls, '/api/projects/3')).toHaveLength(2)
+    expect(screen.getByRole('heading', { level: 1, name: '베타 프로젝트' })).toBeInTheDocument()
+  })
+
+  // T#58 criterion 6: the save worked, the project asked for again fails. The page and the form stay, and only the
+  // project is asked for again.
+  it('keeps the page and the form when the project cannot be asked for again after a save, and 다시 불러오기 asks only for the project', async () => {
+    let projectCalls = 0
+    const calls = stubApi((call) => {
+      if (call.method === 'POST') {
+        return reply(201, { id: 30, employeeId: 3, projectId: 3, startDate: '2026-05-16', endDate: '2026-09-13', allocationPercent: 30 })
+      }
+      if (call.url === '/api/projects/3') {
+        projectCalls += 1
+        return projectCalls === 2 ? reply(500, { code: 'X', message: 'x' }) : undefined
+      }
+      return undefined
+    })
+    await renderPage()
+    await pick('이수민')
+    fireEvent.change(percentInput(), { target: { value: '30' } })
+
+    fireEvent.click(screen.getByRole('button', { name: '배치' }))
+    await flush()
+
+    expect(screen.getByRole('heading', { level: 1, name: '베타 프로젝트' })).toBeInTheDocument()
+    expect(percentInput()).toHaveValue(null)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('프로젝트를 다시 불러오지 못했습니다.')
+    const candidateRequests = gets(calls, '/api/assignments/candidates').length
+    const employeeRequests = gets(calls, '/api/employees/3').length
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 불러오기' }))
+    await flush()
+
+    expect(gets(calls, '/api/projects/3')).toHaveLength(3)
+    expect(gets(calls, '/api/assignments/candidates')).toHaveLength(candidateRequests)
+    expect(gets(calls, '/api/employees/3')).toHaveLength(employeeRequests)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: '베타 프로젝트' })).toBeInTheDocument()
   })
 
