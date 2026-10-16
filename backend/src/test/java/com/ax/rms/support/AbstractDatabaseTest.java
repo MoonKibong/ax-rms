@@ -21,6 +21,11 @@ public abstract class AbstractDatabaseTest {
   @DynamicPropertySource
   static void databaseProperties(DynamicPropertyRegistry registry) {
     Path dbFile = tempDir.resolve("test.db");
-    registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + dbFile + "?foreign_keys=on");
+    registry.add(
+        "spring.datasource.url",
+        () ->
+            "jdbc:sqlite:"
+                + dbFile
+                + "?foreign_keys=on&journal_mode=wal&busy_timeout=5000&transaction_mode=immediate");
   }
 }
