@@ -14,6 +14,7 @@ import com.ax.rms.repository.EmployeeRepository;
 import com.ax.rms.repository.EmployeeSkillRepository;
 import com.ax.rms.repository.ProjectRepository;
 import com.ax.rms.repository.ProjectRequiredSkillLineRepository;
+import com.ax.rms.web.ApiException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -151,7 +152,7 @@ public class ProjectService {
         .findById(id)
         .orElseThrow(
             () ->
-                new ProjectException(
+                new ApiException(
                     HttpStatus.NOT_FOUND, "PROJECT_NOT_FOUND", "프로젝트를 찾을 수 없습니다."));
   }
 
@@ -191,7 +192,7 @@ public class ProjectService {
                 a ->
                     employeeName(a.employeeId(), names) + " " + a.startDate() + " ~ " + a.endDate())
             .collect(Collectors.joining(", "));
-    throw new ProjectException(
+    throw new ApiException(
         HttpStatus.BAD_REQUEST,
         "PROJECT_PERIOD_EXCLUDES_ASSIGNMENTS",
         "프로젝트 기간을 바꾸면 기간 밖으로 나가는 배정 "
@@ -366,7 +367,7 @@ public class ProjectService {
     return status;
   }
 
-  private static ProjectException badRequest(String code, String message) {
-    return new ProjectException(HttpStatus.BAD_REQUEST, code, message);
+  private static ApiException badRequest(String code, String message) {
+    return new ApiException(HttpStatus.BAD_REQUEST, code, message);
   }
 }

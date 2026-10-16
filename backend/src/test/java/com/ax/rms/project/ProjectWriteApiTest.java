@@ -183,7 +183,7 @@ class ProjectWriteApiTest extends AbstractApiTest {
       assertApiError(response, 400, testCase.code());
     }
     assertApiError(
-        client.sendJson("POST", "/api/projects", "not json"), 400, "PROJECT_REQUEST_INVALID");
+        client.sendJson("POST", "/api/projects", "not json"), 400, "REQUEST_INVALID");
     assertThat(projectRepository.count()).as("거절된 요청은 프로젝트를 만들지 않는다").isEqualTo(before);
 
     Map<String, Object> sameDay = validBody();

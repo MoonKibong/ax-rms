@@ -8,14 +8,16 @@ import com.ax.rms.domain.Project;
 import com.ax.rms.repository.AssignmentRepository;
 import com.ax.rms.repository.EmployeeRepository;
 import com.ax.rms.repository.ProjectRepository;
+import com.ax.rms.web.ApiException;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 배치 생성·수정·해제와 후보 조회의 업무 규칙(D8·D14·D27·D28). 위반은 {@link AssignmentRuleException}(400),
- * 없는 리소스는 {@link AssignmentNotFoundException}(404)으로 드러난다.
+ * 배치 생성·수정·해제와 후보 조회의 업무 규칙(D8·D14·D27·D28). 위반은 {@link ApiException}(400),
+ * 없는 리소스는 {@link ApiException}(404)으로 드러난다.
  */
 @Service
 public class AssignmentService {
@@ -51,18 +53,21 @@ public class AssignmentService {
   /** 새 배치를 검증(기간 형식·D14·존재·D8·D27 순)하고 저장한다. */
   @Transactional
   public Assignment create(
-      long employeeId, long projectId, LocalDate start, LocalDate end, int percent) {
+      Long employeeId, Long projectId, LocalDate start, LocalDate end, Integer percent) {
+    if (employeeId == null || projectId == null || percent == null) {
+      throw ruleViolation(REQUEST_INVALID, "직원, 프로젝트, 투입률을 입력하세요.");
+    }
     requireValidPeriod(start, end);
     requireValidPercent(percent);
     Employee employee = findEmployee(employeeId);
     final Project project = findProject(projectId);
     if (employee.availabilityStatus() == AvailabilityStatus.UNAVAILABLE) {
-      throw new AssignmentRuleException(
+      throw ruleViolation(
           EMPLOYEE_UNAVAILABLE, "투입 불가 직원은 새 배치를 받을 수 없습니다.");
     }
     List<Assignment> existing = assignments.findByEmployeeId(employeeId);
     if (calculator.periodAvailability(existing, start, end) == 0) {
-      throw new AssignmentRuleException(NO_AVAILABILITY, "대상 기간에 가용률이 0%입니다.");
+      throw ruleViolation(NO_AVAILABILITY, "대상 기간에 가용률이 0%입니다.");
     }
     checkOverAllocated(existing, start, end, percent);
     checkWithinProjectPeriod(project, start, end);
@@ -91,7 +96,7 @@ public class AssignmentService {
             || newStart.isBefore(current.startDate())
             || newEnd.isAfter(current.endDate());
     if (employee.availabilityStatus() == AvailabilityStatus.UNAVAILABLE && expanded) {
-      throw new AssignmentRuleException(
+      throw ruleViolation(
           MODIFY_FORBIDDEN + MODIFY_FORBIDDEN_SUFFIX,
           "투입 불가 직원은 투입률 하향·기간 축소·해제만 가능합니다.");
     }
@@ -142,17 +147,17 @@ public class AssignmentService {
    */
   private static void requireValidPeriod(LocalDate start, LocalDate end) {
     if (start == null || end == null) {
-      throw new AssignmentRuleException(REQUEST_INVALID, "시작일과 종료일을 입력하세요.");
+      throw ruleViolation(REQUEST_INVALID, "시작일과 종료일을 입력하세요.");
     }
     if (start.isAfter(end)) {
-      throw new AssignmentRuleException(REQUEST_INVALID, "시작일은 종료일보다 늦을 수 없습니다.");
+      throw ruleViolation(REQUEST_INVALID, "시작일은 종료일보다 늦을 수 없습니다.");
     }
   }
 
   /** D14: 5~100의 5 단위가 아니면 위반이다. */
   private static void requireValidPercent(int percent) {
     if (percent < 5 || percent > 100 || percent % 5 != 0) {
-      throw new AssignmentRuleException(
+      throw ruleViolation(
           INVALID_PERCENT, "투입률은 5~100의 5 단위로 입력하세요.");
     }
   }
@@ -161,7 +166,7 @@ public class AssignmentService {
     return employees.findById(employeeId)
         .orElseThrow(
             () ->
-                new AssignmentNotFoundException(
+                notFound(
                     EMPLOYEE_NOT_FOUND, "직원을 찾을 수 없습니다."));
   }
 
@@ -169,12 +174,20 @@ public class AssignmentService {
     return projects.findById(projectId)
         .orElseThrow(
             () ->
-                new AssignmentNotFoundException(
+                notFound(
                     PROJECT_NOT_FOUND, "프로젝트를 찾을 수 없습니다."));
   }
 
-  private static AssignmentNotFoundException notFound() {
-    return new AssignmentNotFoundException(NOT_FOUND, "배치를 찾을 수 없습니다.");
+  private static ApiException notFound() {
+    return notFound(NOT_FOUND, "배치를 찾을 수 없습니다.");
+  }
+
+  private static ApiException notFound(String code, String message) {
+    return new ApiException(HttpStatus.NOT_FOUND, code, message);
+  }
+
+  private static ApiException ruleViolation(String code, String message) {
+    return new ApiException(HttpStatus.BAD_REQUEST, code, message);
   }
 
   /** D8: 대상 기간의 어느 날도 합계가 100%를 넘으면 위반이다. */
@@ -182,7 +195,7 @@ public class AssignmentService {
       List<Assignment> assignments, LocalDate start, LocalDate end, int percent) {
     for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
       if (this.calculator.dailyTotal(assignments, day) + percent > 100) {
-        throw new AssignmentRuleException(
+        throw ruleViolation(
             OVER_ALLOCATED, "대상 기간에 투입률 합계가 100%를 초과합니다.");
       }
     }
@@ -191,7 +204,7 @@ public class AssignmentService {
   /** D8: 배치 기간은 프로젝트 기간 안에 있어야 한다. */
   private static void checkWithinProjectPeriod(Project project, LocalDate start, LocalDate end) {
     if (start.isBefore(project.startDate()) || end.isAfter(project.endDate())) {
-      throw new AssignmentRuleException(
+      throw ruleViolation(
           OUT_OF_PROJECT_PERIOD, "배치 기간은 프로젝트 기간 안에 있어야 합니다.");
     }
   }
@@ -203,7 +216,7 @@ public class AssignmentService {
       if (other.projectId() == projectId
           && !end.isBefore(other.startDate())
           && !start.isAfter(other.endDate())) {
-        throw new AssignmentRuleException(OVERLAP, "같은 프로젝트에 기간이 겹치는 배치가 있습니다.");
+        throw ruleViolation(OVERLAP, "같은 프로젝트에 기간이 겹치는 배치가 있습니다.");
       }
     }
   }

@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -61,6 +62,9 @@ public class AuthController {
       Authentication attempt =
           UsernamePasswordAuthenticationToken.unauthenticated(body.username(), body.password());
       authentication = authenticationManager.authenticate(attempt);
+    } catch (InternalAuthenticationServiceException e) {
+      // 계정 조회 중 저장소 오류: 비밀번호 틀림(401)으로 가리지 않고 원인을 전역 처리기에 넘긴다.
+      throw new IllegalStateException("로그인 중 내부 오류", e);
     } catch (AuthenticationException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(INVALID_CREDENTIALS);
     }

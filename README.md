@@ -67,7 +67,19 @@ npm --prefix frontend run dev
 | `GET /api/auth/me` | 로그인 중이면 200(로그인 응답과 같은 본문), 아니면 401 `AUTH_REQUIRED` |
 | `POST /api/auth/logout` | 204. 세션을 없앤다. |
 
-인증 API의 오류와 401·403·415 응답의 본문은 `{"code": "...", "message": "..."}`이다(D33). 로그인이 없으면 401 `AUTH_REQUIRED`, 권한이 없으면 403 `AUTH_FORBIDDEN`, JSON이 아닌 본문은 415 `UNSUPPORTED_MEDIA_TYPE`이다. 권한 단계를 지난 요청에 아직 처리기가 없으면(404 등) Spring 기본 오류 본문이 나간다. 이후 API 태스크는 자기 오류를 이 형식으로 답한다.
+모든 `/api` 오류 응답의 본문은 `{"code": "...", "message": "..."}`이다(D33). 오류 처리 기준은 [docs/ENGINEERING.md](docs/ENGINEERING.md)에 있다.
+
+| 원인 | 상태 | `code` |
+|---|---|---|
+| 로그인이 없다 | 401 | `AUTH_REQUIRED` |
+| 권한이 없다 | 403 | `AUTH_FORBIDDEN` |
+| 업무 규칙 위반, 없는 리소스 | 400·404 등 | API별 코드(`EMPLOYEE_*`, `PROJECT_*`, `ASSIGNMENT_*`) |
+| 읽을 수 없는 본문, 틀린 경로·질의 값, 빠진 필수 질의 값 | 400 | `REQUEST_INVALID` |
+| JSON이 아닌 본문 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
+| 없는 경로(권한을 지난 뒤) | 404 | `NOT_FOUND` |
+| 지원하지 않는 메서드 | 405 | `METHOD_NOT_ALLOWED` |
+| 다른 작업이 DB를 쓰는 중(`SQLITE_BUSY`) | 409 | `DB_BUSY` |
+| 처리 안 된 예외 | 500 | `INTERNAL_ERROR` (서버 로그에 남는다) |
 
 모든 `/api` 요청의 권한은 `backend/src/main/java/com/ax/rms/security/ApiSecurityFilterChain.java` 한 곳에서 정한다. 표에 없는 요청은 막는다. 이후 API는 이 경로 아래에 두고, 새 경로가 필요하면 이 표를 함께 바꾼다.
 
