@@ -33,7 +33,8 @@ class AssignmentServiceCandidatesQueryTest {
     assignments.rows.add(new Assignment(1L, 1, 1, START, END, 60));
     Project project = new Project(1L, "P", null, START, END, ProjectStatus.IN_PROGRESS);
     AssignmentService service =
-        new AssignmentService(assignments, new FixedEmployees(employees), new FixedProjects(project));
+        new AssignmentService(
+            assignments, new FixedEmployees(employees), new FixedProjects(project));
 
     List<AssignmentService.Candidate> result = service.candidates(1, START, END);
 

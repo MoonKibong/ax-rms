@@ -41,7 +41,12 @@ class AllocationPeriodLimitTest extends AbstractApiTest {
         projectRepository()
             .insert(
                 new Project(
-                    null, "긴 프로젝트", null, FIRST, LocalDate.of(2027, 12, 31), ProjectStatus.IN_PROGRESS))
+                    null,
+                    "긴 프로젝트",
+                    null,
+                    FIRST,
+                    LocalDate.of(2027, 12, 31),
+                    ProjectStatus.IN_PROGRESS))
             .id();
   }
 
