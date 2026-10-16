@@ -63,8 +63,8 @@ public class AssignmentController {
 
   /** 배치 생성 요청 본문. */
   public record CreateRequest(
-      long employeeId, long projectId, LocalDate startDate, LocalDate endDate,
-      int allocationPercent) {}
+      Long employeeId, Long projectId, LocalDate startDate, LocalDate endDate,
+      Integer allocationPercent) {}
 
   /** 배치 수정 요청 본문. 준 것만 수정한다. */
   public record ModifyRequest(Integer allocationPercent, LocalDate startDate, LocalDate endDate) {}
