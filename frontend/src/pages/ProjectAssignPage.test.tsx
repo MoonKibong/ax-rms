@@ -294,6 +294,48 @@ describe('ProjectAssignPage assigning', () => {
     expect(writes(calls)).toEqual([])
   })
 
+  // T#53 criterion 8: a period of more than 366 days (both dates counted) is not asked for and says why under the end date.
+  it('does not ask for candidates for a period of more than 366 days and says why under the end date', async () => {
+    const calls = stubApi()
+    await renderPage()
+    const before = gets(calls, '/api/assignments/candidates').length
+
+    fireEvent.change(endInput(), { target: { value: '2027-05-17' } })
+    await flush()
+    expect(endInput()).toHaveAttribute('aria-invalid', 'true')
+    expect(describedBy(endInput())).toBe('배치 기간은 최대 366일입니다.')
+    expect(gets(calls, '/api/assignments/candidates')).toHaveLength(before)
+
+    fireEvent.change(endInput(), { target: { value: '2027-05-16' } })
+    await flush()
+    expect(endInput()).not.toHaveAttribute('aria-invalid')
+    expect(gets(calls, '/api/assignments/candidates')).toHaveLength(before + 1)
+  })
+
+  it('does not send a save for a period of more than 366 days', async () => {
+    const calls = stubApi()
+    await renderPage()
+    await pick('이수민')
+    fireEvent.change(percentInput(), { target: { value: '30' } })
+    fireEvent.change(endInput(), { target: { value: '2027-05-17' } })
+    fireEvent.click(screen.getByRole('button', { name: '배치' }))
+    await flush()
+    expect(describedBy(endInput())).toBe('배치 기간은 최대 366일입니다.')
+    expect(writes(calls)).toEqual([])
+  })
+
+  it('starts a project longer than 366 days with the first 366 days', async () => {
+    const calls = stubApi((call) =>
+      call.url === '/api/projects/3' ? reply(200, { ...PROJECT, endDate: '2028-12-31' }) : undefined,
+    )
+    await renderPage()
+    expect(startInput()).toHaveValue('2026-05-16')
+    expect(endInput()).toHaveValue('2027-05-16')
+    expect(gets(calls, '/api/assignments/candidates').map((call) => call.url)).toEqual([
+      '/api/assignments/candidates?projectId=3&startDate=2026-05-16&endDate=2027-05-16',
+    ])
+  })
+
   it('posts the assignment once, empties the form and asks for project, candidates and schedule again', async () => {
     let release: (response: Response) => void = () => undefined
     const calls = stubApi((call) =>
@@ -331,6 +373,7 @@ describe('ProjectAssignPage assigning', () => {
     ['ASSIGNMENT_OVER_ALLOCATED', '대상 기간에 투입률 합계가 100%를 초과합니다.', 'percent'],
     ['ASSIGNMENT_OUT_OF_PROJECT_PERIOD', '배치 기간은 프로젝트 기간 안에 있어야 합니다.', 'period'],
     ['ASSIGNMENT_REQUEST_INVALID', '시작일은 종료일보다 늦을 수 없습니다.', 'period'],
+    ['ASSIGNMENT_PERIOD_TOO_LONG', '배치 기간은 최대 366일입니다.', 'period'],
     ['ASSIGNMENT_EMPLOYEE_UNAVAILABLE', '투입 불가 직원은 새 배치를 받을 수 없습니다.', 'form'],
     ['ASSIGNMENT_NO_AVAILABILITY', '대상 기간에 가용률이 0%입니다.', 'form'],
     ['ASSIGNMENT_OVERLAP', '같은 프로젝트에 기간이 겹치는 배치가 있습니다.', 'form'],
