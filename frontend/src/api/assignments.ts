@@ -29,7 +29,7 @@ export type FailureSpot = 'percent' | 'period' | 'form'
 export type PlacedFailure = { spot: FailureSpot; message: string }
 
 const PERCENT_CAUSES = ['ASSIGNMENT_INVALID_PERCENT', 'ASSIGNMENT_OVER_ALLOCATED']
-const PERIOD_CAUSES = ['ASSIGNMENT_REQUEST_INVALID', 'ASSIGNMENT_OUT_OF_PROJECT_PERIOD']
+const PERIOD_CAUSES = ['ASSIGNMENT_REQUEST_INVALID', 'ASSIGNMENT_OUT_OF_PROJECT_PERIOD', 'ASSIGNMENT_PERIOD_TOO_LONG']
 
 // Any answer of the server with a `code` and a `message` (an assignment rule, or AUTH_REQUIRED, AUTH_FORBIDDEN, …) keeps its
 // own Korean message; the known assignment causes stand under their input, every other one above the button. Only an answer
