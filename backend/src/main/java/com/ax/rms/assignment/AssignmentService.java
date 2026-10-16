@@ -10,7 +10,10 @@ import com.ax.rms.repository.EmployeeRepository;
 import com.ax.rms.repository.ProjectRepository;
 import com.ax.rms.web.ApiException;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AssignmentService {
 
+  /** T#53: 한 배치·후보 조회의 기간은 시작일과 종료일을 포함해 이 일수를 넘지 못한다. */
+  static final int MAX_PERIOD_DAYS = 366;
+
   private static final String REQUEST_INVALID = "ASSIGNMENT_REQUEST_INVALID";
+  private static final String PERIOD_TOO_LONG = "ASSIGNMENT_PERIOD_TOO_LONG";
   private static final String INVALID_PERCENT = "ASSIGNMENT_INVALID_PERCENT";
   private static final String EMPLOYEE_NOT_FOUND = "ASSIGNMENT_EMPLOYEE_NOT_FOUND";
   private static final String PROJECT_NOT_FOUND = "ASSIGNMENT_PROJECT_NOT_FOUND";
@@ -125,6 +132,8 @@ public class AssignmentService {
   public List<Candidate> candidates(long projectId, LocalDate start, LocalDate end) {
     requireValidPeriod(start, end);
     findProject(projectId);
+    Map<Long, List<Assignment>> byEmployee =
+        assignments.findAll().stream().collect(Collectors.groupingBy(Assignment::employeeId));
     return employees.findAll().stream()
         .map(
             employee ->
@@ -133,7 +142,7 @@ public class AssignmentService {
                     employee.name(),
                     employee.availabilityStatus().name(),
                     calculator.periodAvailability(
-                        assignments.findByEmployeeId(employee.id()), start, end)))
+                        byEmployee.getOrDefault(employee.id(), List.of()), start, end)))
         .toList();
   }
 
@@ -142,7 +151,8 @@ public class AssignmentService {
       long employeeId, String name, String availabilityStatus, int periodAvailability) {}
 
   /**
-   * 기간 형식: 시작일과 종료일이 모두 있고 시작일이 종료일보다 늦지 않아야 한다. 업무 규칙(D14·D8·D27)보다 먼저 본다.
+   * 기간 형식: 시작일과 종료일이 모두 있고 시작일이 종료일보다 늦지 않아야 하며, 길이는 {@value #MAX_PERIOD_DAYS}일
+   * (양 끝 포함)을 넘지 못한다. 날짜별 계산 반복이 이 길이로 묶인다. 업무 규칙(D14·D8·D27)보다 먼저 본다.
    * 역전된 기간은 날짜별 합계 검사를 건너뛰어 저장될 수 있으므로 여기서 막는다.
    */
   private static void requireValidPeriod(LocalDate start, LocalDate end) {
@@ -151,6 +161,10 @@ public class AssignmentService {
     }
     if (start.isAfter(end)) {
       throw ruleViolation(REQUEST_INVALID, "시작일은 종료일보다 늦을 수 없습니다.");
+    }
+    if (ChronoUnit.DAYS.between(start, end) >= MAX_PERIOD_DAYS) {
+      throw ruleViolation(
+          PERIOD_TOO_LONG, "배치 기간은 최대 " + MAX_PERIOD_DAYS + "일입니다.");
     }
   }
 
