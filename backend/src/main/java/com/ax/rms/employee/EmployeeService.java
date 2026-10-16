@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** 직원 목록·상세·등록·수정·상태 변경 업무 로직(D2, D6, D7, D15, D18, D19, D21, D33). */
 @Service
@@ -129,7 +130,8 @@ public class EmployeeService {
     return toDetail(employee);
   }
 
-  /** 새 직원을 등록한다(항상 {@code AVAILABLE}로 시작, D6). */
+  /** 새 직원을 등록한다(항상 {@code AVAILABLE}로 시작, D6). 기술 삽입까지 하나의 트랜잭션이다(T#54, B#3). */
+  @Transactional
   public EmployeeDetailResponse register(EmployeeUpsertRequest request) {
     validateUpsert(request);
     Employee inserted =
@@ -147,7 +149,11 @@ public class EmployeeService {
     return toDetail(employeeRepository.findById(inserted.id()).orElseThrow(this::notFound));
   }
 
-  /** 직원 정보와 기술을 수정한다. 투입 상태 관련 필드는 바꾸지 않는다(D6). */
+  /**
+   * 직원 정보와 기술을 수정한다. 투입 상태 관련 필드는 바꾸지 않는다(D6). 기술을 지우고 다시 넣는 것까지
+   * 하나의 트랜잭션이다(T#54, B#3).
+   */
+  @Transactional
   public EmployeeDetailResponse update(long id, EmployeeUpsertRequest request) {
     Employee existing = employeeRepository.findById(id).orElseThrow(this::notFound);
     validateUpsert(request);

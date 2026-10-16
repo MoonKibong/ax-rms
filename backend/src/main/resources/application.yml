@@ -3,7 +3,7 @@ spring:
     init:
       mode: always
   datasource:
-    url: jdbc:sqlite:${DB_PATH:./data/app.db}?foreign_keys=on
+    url: jdbc:sqlite:${DB_PATH:./data/app.db}?foreign_keys=on&journal_mode=wal&busy_timeout=5000&transaction_mode=immediate
     driver-class-name: org.sqlite.JDBC
 server:
   servlet:

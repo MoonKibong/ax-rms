@@ -25,6 +25,8 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 빈 DB로 처음 실행할 때 D31의 시드(부서3·직원20·프로젝트5·배치15, §7 시나리오 데이터, 데모 계정 4개)를 넣는다.
@@ -43,8 +45,9 @@ public class SeedRunner implements ApplicationRunner {
   private final AccountRepository accountRepository;
   private final PasswordEncoder passwordEncoder;
   private final Clock clock;
+  private final PlatformTransactionManager transactionManager;
 
-  /** 주어진 저장소·인코더·시계로 이 시더를 만든다. */
+  /** 주어진 저장소·인코더·시계·트랜잭션 관리자로 이 시더를 만든다. */
   public SeedRunner(
       DepartmentRepository departmentRepository,
       EmployeeRepository employeeRepository,
@@ -54,7 +57,8 @@ public class SeedRunner implements ApplicationRunner {
       AssignmentRepository assignmentRepository,
       AccountRepository accountRepository,
       PasswordEncoder passwordEncoder,
-      Clock clock) {
+      Clock clock,
+      PlatformTransactionManager transactionManager) {
     this.departmentRepository = departmentRepository;
     this.employeeRepository = employeeRepository;
     this.employeeSkillRepository = employeeSkillRepository;
@@ -64,6 +68,7 @@ public class SeedRunner implements ApplicationRunner {
     this.accountRepository = accountRepository;
     this.passwordEncoder = passwordEncoder;
     this.clock = clock;
+    this.transactionManager = transactionManager;
   }
 
   @Override
@@ -71,14 +76,17 @@ public class SeedRunner implements ApplicationRunner {
     if (departmentRepository.count() > 0) {
       return;
     }
-    LocalDate today = LocalDate.now(clock);
-
-    List<Long> departmentIds = insertDepartments();
-    List<Long> employeeIds = insertEmployees(departmentIds, today);
-    List<Long> projectIds = insertProjects(today);
-    insertRequiredSkillLines(projectIds);
-    insertAssignments(employeeIds, projectIds, today);
-    insertDemoAccounts(employeeIds);
+    new TransactionTemplate(transactionManager)
+        .executeWithoutResult(
+            status -> {
+              LocalDate today = LocalDate.now(clock);
+              List<Long> departmentIds = insertDepartments();
+              List<Long> employeeIds = insertEmployees(departmentIds, today);
+              List<Long> projectIds = insertProjects(today);
+              insertRequiredSkillLines(projectIds);
+              insertAssignments(employeeIds, projectIds, today);
+              insertDemoAccounts(employeeIds);
+            });
   }
 
   private List<Long> insertDepartments() {
