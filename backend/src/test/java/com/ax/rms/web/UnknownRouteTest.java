@@ -34,4 +34,11 @@ class UnknownRouteTest extends AbstractApiTest {
   void unauthenticatedUnknownPathStaysUnauthorized() {
     assertError(client().get("/api/no-such"), 401, "AUTH_REQUIRED");
   }
+
+  @Test
+  void authenticatedUnknownPathOutsideRulesIsForbidden() {
+    ApiClient hr = client();
+    hr.login("hr.manager", "HrManager!1");
+    assertError(hr.get("/api/no-such"), 403, "AUTH_FORBIDDEN");
+  }
 }
