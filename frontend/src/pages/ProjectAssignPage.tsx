@@ -29,6 +29,21 @@ const GANTT_STATUS: Record<ProjectStatus, GanttAssignment['projectStatus']> = {
   ON_HOLD: '보류',
 }
 
+// T#53: one assignment covers at most 366 days, both dates counted (the server's ASSIGNMENT_PERIOD_TOO_LONG).
+const MAX_PERIOD_DAYS = 366
+const PERIOD_TOO_LONG = '배치 기간은 최대 366일입니다.'
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function periodDays(start: string, end: string): number {
+  return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY_MS) + 1
+}
+
+// The project's end date, or the last day of the first 366 days when the project is longer.
+function firstDays(start: string, end: string): string {
+  if (periodDays(start, end) <= MAX_PERIOD_DAYS) return end
+  return new Date(Date.parse(`${start}T00:00:00Z`) + (MAX_PERIOD_DAYS - 1) * DAY_MS).toISOString().slice(0, 10)
+}
+
 const PERCENT_RULE = '투입률은 5~100의 5 단위로 입력하세요.'
 
 type ProjectState = { phase: 'loading' } | { phase: 'error' } | { phase: 'missing' } | { phase: 'ready'; project: ProjectDetail }
@@ -80,8 +95,9 @@ function ProjectAssignPage({ id }: { id: number }) {
 
   const project = projectState.phase === 'ready' ? projectState.project : null
   const start = period?.start ?? project?.startDate ?? ''
-  const end = period?.end ?? project?.endDate ?? ''
-  const periodAsked = project !== null && start !== '' && end !== '' && start <= end
+  const end = period?.end ?? (project ? firstDays(project.startDate, project.endDate) : '')
+  const periodTooLong = start !== '' && end !== '' && start <= end && periodDays(start, end) > MAX_PERIOD_DAYS
+  const periodAsked = project !== null && start !== '' && end !== '' && start <= end && !periodTooLong
 
   useEffect(() => {
     const controller = new AbortController()
@@ -199,6 +215,8 @@ function ProjectAssignPage({ id }: { id: number }) {
       found.period = '시작일과 종료일을 입력하세요.'
     } else if (start > end) {
       found.period = '시작일은 종료일보다 늦을 수 없습니다.'
+    } else if (periodTooLong) {
+      found.period = PERIOD_TOO_LONG
     }
     const percent = readPercent(percentText)
     if (percent === null) {
@@ -335,7 +353,7 @@ function ProjectAssignPage({ id }: { id: number }) {
               label="종료일"
               type="date"
               value={end}
-              error={errors.period}
+              error={errors.period ?? (periodTooLong ? PERIOD_TOO_LONG : undefined)}
               onChange={(event) => {
                 setPeriod({ start, end: event.target.value })
                 clearError('period')

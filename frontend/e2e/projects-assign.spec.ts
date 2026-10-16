@@ -165,6 +165,18 @@ for (const width of [1280, 360]) {
   })
 }
 
+// T#53 criterion 10: a period of more than 366 days is said under the end date (real seed, nothing intercepted, nothing saved).
+for (const width of [1280, 360]) {
+  test(`a period of more than 366 days is said under the end date at ${width}px`, async ({ page }) => {
+    await openAssignFromList(page, PROJECT_MANAGER, width)
+    await expectHeading(page, '알파 프로젝트')
+
+    await page.getByLabel('종료일').fill('2027-12-31')
+    await expectMessageUnder(page, '종료일', '배치 기간은 최대 366일입니다.')
+    await expectNoHorizontalOverflow(page, [width])
+  })
+}
+
 test('the release dialog opens over the screen, names the assignment and 취소 sends nothing', async ({ page }) => {
   const writes: string[] = []
   await stubAnswers(page, (method, url) => writes.push(`${method} ${url}`))
