@@ -57,29 +57,38 @@ class ConcurrentAssignmentTest extends AbstractSeedTest {
                     null,
                     null));
         CyclicBarrier barrier = new CyclicBarrier(2);
-        Future<?> first =
-            pool.submit(
-                () -> attemptCreate(barrier, employee.id(), project.id(), start, end, 60));
-        Future<?> second =
-            pool.submit(
-                () -> attemptCreate(barrier, employee.id(), project.id(), start, end, 60));
-        first.get(10, TimeUnit.SECONDS);
-        second.get(10, TimeUnit.SECONDS);
+        Future<Outcome> first =
+            pool.submit(() -> attemptCreate(barrier, employee.id(), project.id(), start, end, 60));
+        Future<Outcome> second =
+            pool.submit(() -> attemptCreate(barrier, employee.id(), project.id(), start, end, 60));
+        Outcome firstOutcome = first.get(10, TimeUnit.SECONDS);
+        Outcome secondOutcome = second.get(10, TimeUnit.SECONDS);
 
+        int successCount =
+            (firstOutcome.succeeded ? 1 : 0) + (secondOutcome.succeeded ? 1 : 0);
         int total =
             assignmentRepository.findByEmployeeId(employee.id()).stream()
                 .mapToInt(Assignment::allocationPercent)
                 .sum();
-        assertThat(total)
-            .as("%d번째 반복: 직원 %d의 투입률 합계", i, employee.id())
-            .isLessThanOrEqualTo(100);
+        String context =
+            String.format(
+                "%d번째 반복: 직원 %d, 첫 요청=%s, 둘째 요청=%s",
+                i, employee.id(), firstOutcome, secondOutcome);
+
+        assertThat(total).as(context).isLessThanOrEqualTo(100);
+        if (successCount == 1) {
+          Outcome rejected = firstOutcome.succeeded ? secondOutcome : firstOutcome;
+          assertThat(rejected.rejectionCode).as(context).isEqualTo("ASSIGNMENT_OVER_ALLOCATED");
+        } else {
+          assertThat(successCount).as(context).isEqualTo(2);
+        }
       }
     } finally {
       pool.shutdownNow();
     }
   }
 
-  private void attemptCreate(
+  private Outcome attemptCreate(
       CyclicBarrier barrier,
       long employeeId,
       long projectId,
@@ -93,8 +102,11 @@ class ConcurrentAssignmentTest extends AbstractSeedTest {
     }
     try {
       assignmentService.create(employeeId, projectId, start, end, percent);
-    } catch (AssignmentRuleException expected) {
-      // 둘 중 하나가 거부되는 것은 정상이다(D8을 지킨 결과) — 거부 자체는 테스트 실패가 아니다.
+      return new Outcome(true, null);
+    } catch (AssignmentRuleException rejected) {
+      return new Outcome(false, rejected.code());
     }
   }
+
+  private record Outcome(boolean succeeded, String rejectionCode) {}
 }

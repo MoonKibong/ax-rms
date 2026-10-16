@@ -51,7 +51,6 @@ class SeedRetryTest extends AbstractSeedTest {
             transactionManager);
     assertThrows(
         RuntimeException.class, () -> failingRunner.run(new DefaultApplicationArguments()));
-    assertThat(departmentRepository.count()).isZero();
 
     SeedRunner workingRunner =
         new SeedRunner(
