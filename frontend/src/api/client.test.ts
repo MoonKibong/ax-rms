@@ -81,6 +81,21 @@ describe('apiFetch', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
+  it('does not take the 401 of a cancelled Request for an expired session, and lets init.signal override the signal of the Request', async () => {
+    const handler = vi.fn()
+    setSessionExpiredHandler(handler)
+    vi.stubGlobal('fetch', vi.fn(() => reply(401, {})))
+    const controller = new AbortController()
+    controller.abort()
+
+    await apiFetch(new Request('http://localhost/api/dashboard', { signal: controller.signal }))
+    expect(handler).not.toHaveBeenCalled()
+
+    // init.signal wins over the signal of the Request, as it does for fetch itself: a live init.signal makes it a live request.
+    await apiFetch(new Request('http://localhost/api/dashboard', { signal: controller.signal }), { signal: new AbortController().signal })
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
   // Criterion 10: no screen asks for a business answer by itself.
   it('is the only way the code outside the account endpoints calls fetch', () => {
     const allowed = ['./client.ts', '../auth/AuthContext.tsx', '../pages/LoginPage.tsx', '../App.tsx']
