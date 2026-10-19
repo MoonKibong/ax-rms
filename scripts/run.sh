@@ -22,13 +22,15 @@ backend_port=${BACKEND_PORT:-8080}
 frontend_port=${FRONTEND_PORT:-5173}
 groups=()
 
-# Exit status: 0 confirmed in use, 1 confirmed free, 2 could not tell (never treat this as "free").
+# Exit status: 0 confirmed in use, 1 confirmed free (connection actively refused), 2 could not tell (never
+# treat this as "free" — covers any other socket error such as EPERM/EACCES/ENOTFOUND, and the timeout, since
+# a connection attempt that hangs instead of failing outright is not proof that nothing is listening).
 port_in_use() {
   node -e '
     const socket = require("net").connect({ port: Number(process.argv[1]), host: "localhost" })
     socket.on("connect", () => process.exit(44))
-    socket.on("error", () => process.exit(55))
-    setTimeout(() => process.exit(55), 2000)
+    socket.on("error", (err) => process.exit(err.code === "ECONNREFUSED" ? 55 : 66))
+    setTimeout(() => process.exit(66), 2000)
   ' "$1"
   case $? in
     44) return 0 ;;
