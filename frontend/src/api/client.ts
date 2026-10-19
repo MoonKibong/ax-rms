@@ -23,8 +23,8 @@ function isAccountEndpoint(input: RequestInfo | URL): boolean {
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const began = session
-  // fetch itself lets init.signal win over the signal of a Request.
-  const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
+  // fetch itself lets init.signal win over the signal of a Request, and an init.signal of null (not undefined) clears it.
+  const signal = init?.signal !== undefined ? init.signal : input instanceof Request ? input.signal : undefined
   const response = await fetch(input, init)
   if (response.status === 401 && !signal?.aborted && !isAccountEndpoint(input) && began === session) {
     startNewSession()

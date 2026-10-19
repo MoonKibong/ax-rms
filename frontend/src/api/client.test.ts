@@ -96,6 +96,18 @@ describe('apiFetch', () => {
     expect(handler).toHaveBeenCalledTimes(1)
   })
 
+  it('takes the 401 of a cancelled Request sent with signal: null for an expired session, as fetch sends it uncancelled', async () => {
+    const handler = vi.fn()
+    setSessionExpiredHandler(handler)
+    vi.stubGlobal('fetch', vi.fn(() => reply(401, {})))
+    const controller = new AbortController()
+    controller.abort()
+
+    await apiFetch(new Request('http://localhost/api/dashboard', { signal: controller.signal }), { signal: null })
+
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
   // Criterion 10: no screen asks for a business answer by itself.
   it('is the only way the code outside the account endpoints calls fetch', () => {
     const allowed = ['./client.ts', '../auth/AuthContext.tsx', '../pages/LoginPage.tsx', '../App.tsx']
