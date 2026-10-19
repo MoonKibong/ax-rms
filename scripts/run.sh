@@ -22,13 +22,19 @@ backend_port=${BACKEND_PORT:-8080}
 frontend_port=${FRONTEND_PORT:-5173}
 groups=()
 
+# Exit status: 0 confirmed in use, 1 confirmed free, 2 could not tell (never treat this as "free").
 port_in_use() {
   node -e '
     const socket = require("net").connect({ port: Number(process.argv[1]), host: "localhost" })
-    socket.on("connect", () => process.exit(0))
-    socket.on("error", () => process.exit(1))
-    setTimeout(() => process.exit(1), 2000)
+    socket.on("connect", () => process.exit(44))
+    socket.on("error", () => process.exit(55))
+    setTimeout(() => process.exit(55), 2000)
   ' "$1"
+  case $? in
+    44) return 0 ;;
+    55) return 1 ;;
+    *) return 2 ;;
+  esac
 }
 
 check_node_version() {
@@ -62,10 +68,18 @@ main() {
 
   local port
   for port in "$backend_port" "$frontend_port"; do
-    if port_in_use "$port"; then
-      echo "run: 포트 $port 사용 중 — 그 포트를 쓰는 프로세스를 끝낸 뒤 다시 실행하세요 (아무 서버도 띄우지 않았습니다)" >&2
-      exit 1
-    fi
+    port_in_use "$port"
+    case $? in
+      0)
+        echo "run: 포트 $port 사용 중 — 그 포트를 쓰는 프로세스를 끝낸 뒤 다시 실행하세요 (아무 서버도 띄우지 않았습니다)" >&2
+        exit 1
+        ;;
+      1) ;; # confirmed free
+      *)
+        echo "run: 포트 $port 상태를 확인할 수 없습니다 — 아무 서버도 띄우지 않았습니다" >&2
+        exit 1
+        ;;
+    esac
   done
 
   trap stop_servers EXIT
