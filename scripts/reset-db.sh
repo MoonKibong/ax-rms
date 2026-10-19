@@ -5,9 +5,11 @@
 #
 # --db defaults to backend/data/app.db; the path is taken only from this flag, never from the DB_PATH environment
 # variable the app itself reads (a DB_PATH left in the caller's shell for an unrelated reason must not change what
-# this destructive command deletes). The resolved real path (symlinks followed, for the file itself when it
-# exists) must stay inside this repository; an absolute path, a ".." that reaches outside it, or a symlink whose
-# target is outside it is refused and nothing is deleted.
+# this destructive command deletes). A relative --db is always rooted at the repository root, never at the
+# caller's current directory (so running this from inside backend/ cannot shift the target). The resolved real
+# path (symlinks followed, for the file itself when it exists) must stay inside this repository; a ".." or an
+# absolute path that reaches outside it, or a symlink whose target is outside it, is refused and nothing is
+# deleted.
 # --port defaults to 8080 (the backend's default demo port, BACKEND_PORT in scripts/run.sh). If that port is
 # confirmed in use, the backend looks like it is running: refused, nothing deleted (deleting a WAL file a live
 # connection still holds can break its next checkpoint). If the check itself cannot tell (for example `node` is
@@ -41,12 +43,18 @@ port_in_use() {
   esac
 }
 
-# Resolves --db to a real, absolute path and checks it stays inside the repository root. If the file (or a
-# symlink at that path) already exists, its target is resolved too, so a symlink pointing outside the repo is
-# caught instead of silently unlinking just the local symlink. If it does not exist yet, only the parent
-# directory is resolved (there is nothing further to follow).
+# Resolves --db to a real, absolute path and checks it stays inside the repository root. A relative path is
+# rooted at the repository root ($root), never at the caller's current directory — this script can be invoked
+# from anywhere (`cd backend && ../scripts/reset-db.sh --db data/app.db` still means <root>/data/app.db, not
+# <root>/backend/data/app.db). If the file (or a symlink at that path) already exists, its target is resolved
+# too, so a symlink pointing outside the repo is caught instead of silently unlinking just the local symlink.
+# If it does not exist yet, only the parent directory is resolved (there is nothing further to follow).
 resolve_inside_root() {
   local target=$1 dir base resolved_dir resolved_file
+  case "$target" in
+    /*) ;;
+    *) target="$root/$target" ;;
+  esac
   if [ -e "$target" ] || [ -L "$target" ]; then
     resolved_file=$(node -e 'console.log(require("fs").realpathSync(process.argv[1]))' "$target" 2>/dev/null) || return 1
   else
