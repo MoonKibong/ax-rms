@@ -8,8 +8,18 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> & {
   hint?: string
 }
 
-// BRIEF §3.2. The error replaces the hint, sits right under the input (D33), and the input points to it.
-function TextField({ label, error, hint, required, className, ...inputProps }: TextFieldProps) {
+// BRIEF §3.2. The error replaces the hint, sits right under the input (D33), and the input points to it. A caller's
+// aria-describedby is kept in front of the message id, and a caller's aria-invalid counts as an error (T#58).
+function TextField({
+  label,
+  error,
+  hint,
+  required,
+  className,
+  'aria-describedby': describedBy,
+  'aria-invalid': invalid,
+  ...inputProps
+}: TextFieldProps) {
   const id = useId()
   const messageId = `${id}-message`
   const message = error ?? hint
@@ -29,8 +39,8 @@ function TextField({ label, error, hint, required, className, ...inputProps }: T
         id={id}
         className="field__input"
         required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={message ? messageId : undefined}
+        aria-invalid={error || (invalid && invalid !== 'false') ? true : undefined}
+        aria-describedby={[describedBy, message ? messageId : undefined].filter(Boolean).join(' ') || undefined}
       />
       {error ? (
         <p id={messageId} className="field__error">

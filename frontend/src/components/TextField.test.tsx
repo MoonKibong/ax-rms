@@ -21,4 +21,21 @@ describe('TextField', () => {
     expect(message.id).not.toBe('')
     expect(input.compareDocumentPosition(message) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
+
+  // T#58 criterion 1: the caller's aria-* are merged with the field's own, not overwritten.
+  it('merges the caller aria-describedby with its own message id and keeps the caller aria-invalid', () => {
+    const { rerender } = render(<TextField label="시작일" aria-describedby="x" error="기간 오류" />)
+
+    const input = screen.getByLabelText('시작일')
+    const message = screen.getByText('기간 오류')
+    expect(input.getAttribute('aria-describedby')).toBe(`x ${message.id}`)
+
+    rerender(<TextField label="시작일" aria-describedby="x" />)
+    expect(screen.getByLabelText('시작일').getAttribute('aria-describedby')).toBe('x')
+    expect(screen.getByLabelText('시작일')).not.toHaveAttribute('aria-invalid')
+
+    rerender(<TextField label="시작일" aria-invalid />)
+    expect(screen.getByLabelText('시작일')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('시작일')).not.toHaveAttribute('aria-describedby')
+  })
 })

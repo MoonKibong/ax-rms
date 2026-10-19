@@ -377,6 +377,7 @@ describe('EmployeeFormPage errors', () => {
 
       expect(field()).toHaveAttribute('aria-invalid', 'true')
       expect(field()).toHaveAccessibleDescription(message)
+      expect(field()).toHaveFocus() // T#58 criterion 5
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   }
@@ -391,6 +392,13 @@ describe('EmployeeFormPage errors', () => {
 
       await save()
 
+      // T#58 criterion 4: the first row's 기술 이름 carries aria-invalid, the message and the focus; the fieldset keeps only
+      // the description.
+      const firstName = within(skillRow(1)).getByRole('textbox', { name: '기술 이름' })
+      expect(firstName).toHaveAttribute('aria-invalid', 'true')
+      expect(firstName).toHaveAccessibleDescription(message)
+      expect(firstName).toHaveFocus()
+      expect(skillsGroup()).not.toHaveAttribute('aria-invalid')
       expect(skillsGroup()).toHaveAccessibleDescription(message)
       const shown = within(skillsGroup()).getByText(message)
       const add = screen.getByRole('button', { name: '기술 추가' })
@@ -409,10 +417,12 @@ describe('EmployeeFormPage errors', () => {
       })
       await renderAt('/employees/1/edit')
       await save()
-      expect(skillsGroup()).toHaveAttribute('aria-invalid', 'true')
+      const firstName = () => within(skillRow(1)).getByRole('textbox', { name: '기술 이름' })
+      expect(firstName()).toHaveAttribute('aria-invalid', 'true')
 
       await save()
 
+      expect(firstName()).not.toHaveAttribute('aria-invalid')
       expect(skillsGroup()).not.toHaveAttribute('aria-invalid')
       expect(skillsGroup()).not.toHaveAttribute('aria-describedby')
       expect(screen.queryByText(message)).not.toBeInTheDocument()
@@ -431,10 +441,13 @@ describe('EmployeeFormPage errors', () => {
       stubFetch({ save: answer })
       await renderAt('/employees/new')
 
+      saveButton().focus() // T#58 criterion 5: a real click leaves the focus on the button; fireEvent.click does not
+      expect(saveButton()).toHaveFocus()
       await save()
 
       const alert = screen.getByRole('alert')
       expect(alert).toHaveTextContent(expected)
+      expect(saveButton()).toHaveFocus() // a form-level message moves no focus
       expect(alert.closest('form')).not.toBeNull()
       expect(alert.compareDocumentPosition(saveButton()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
@@ -471,6 +484,7 @@ describe('EmployeeFormPage errors', () => {
       expect(writes(calls)).toEqual([])
       expect(careerInput()).toHaveAttribute('aria-invalid', 'true')
       expect(careerInput()).toHaveAccessibleDescription('경력은 정수로 입력하세요.')
+      expect(careerInput()).toHaveFocus() // T#58 criterion 5
     })
   }
 })

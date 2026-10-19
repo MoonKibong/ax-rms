@@ -7,6 +7,15 @@
   min-width: 0;
 }
 
+/* T#58: the message that the project could not be asked for again, and the button that asks for it again. */
+.assign__reload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 .assign__summary {
   display: flex;
   flex-direction: column;
