@@ -1,5 +1,6 @@
 import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import type { EmployeeListItem } from '../api/employees'
 import { AuthContext } from '../auth/AuthContext'
 import { isHrManager } from '../auth/roles'
@@ -125,7 +126,7 @@ function requestQuery(filters: Filters): string {
 }
 
 async function fetchEmployees(url: string, signal: AbortSignal): Promise<EmployeeListItem[]> {
-  const response = await fetch(url, { signal })
+  const response = await apiFetch(url, { signal })
   if (!response.ok) {
     // Read the error body too: an unread body keeps the request open in the browser.
     await response.text().catch(() => '')

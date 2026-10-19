@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { apiFetch } from '../api/client'
 import type { Dashboard } from '../api/dashboard'
 import AppShell from '../components/AppShell'
 import Badge from '../components/Badge'
@@ -75,7 +76,7 @@ function DashboardPage() {
   useEffect(() => {
     const controller = new AbortController()
     setState({ phase: 'loading' })
-    fetch('/api/dashboard', { signal: controller.signal })
+    apiFetch('/api/dashboard', { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) {
           // Read the error body too: an unread body keeps the request open in the browser.

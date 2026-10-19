@@ -13,6 +13,7 @@ import Dialog from '../components/Dialog'
 import SelectField, { type SelectOption } from '../components/SelectField'
 import TextField from '../components/TextField'
 import { WarningIcon } from '../components/icons'
+import { apiFetch } from '../api/client'
 
 // T#39, BRIEF §6.4 item 5 and "상태 변경" (D6, D21, D33): the HR manager's buttons under the detail and the status
 // change dialog. Below 1024px the buttons are hidden (D29, EmployeeDetail.css).
@@ -62,7 +63,7 @@ function StatusDialog({ employee, onClose, onSaved }: StatusDialogProps) {
         ? { availabilityStatus: 'UNAVAILABLE', unavailableReason: reason.trim(), unavailableUntil: until || null }
         : { availabilityStatus: 'AVAILABLE', unavailableReason: null, unavailableUntil: null }
     try {
-      const response = await fetch(`/api/employees/${employee.id}/status`, {
+      const response = await apiFetch(`/api/employees/${employee.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

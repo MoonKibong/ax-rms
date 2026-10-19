@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import type { AssignedEmployee, ProficiencyLevel, ProjectDetail, RequiredSkill } from '../api/projects'
 import { useAuth } from '../auth/AuthContext'
 import AppShell from '../components/AppShell'
@@ -47,7 +48,7 @@ function ProjectDetailPage({ id }: { id: number }) {
   useEffect(() => {
     const controller = new AbortController()
     setState({ phase: 'loading' })
-    fetch(`/api/projects/${id}`, { signal: controller.signal })
+    apiFetch(`/api/projects/${id}`, { signal: controller.signal })
       .then(async (response) => {
         if (response.status === 404) {
           await response.text().catch(() => '')

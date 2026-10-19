@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, Route, Routes, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
 import App from './App'
 import { homePath, isManager, useAuth, type CurrentUser } from './auth/AuthContext'
 import { isHrManager, isProjectManager } from './auth/roles'
@@ -16,10 +16,33 @@ import ProjectFormPage from './pages/ProjectFormPage'
 import ProjectListPage from './pages/ProjectListPage'
 import './AppRoutes.css'
 
+// T#55: a logged-out visitor is sent to /login with the address they were on (path, query and hash), and logging in
+// leads back there. The state is the router's own, but it is checked again: only a path inside this app is followed.
+function ToLogin() {
+  const { pathname, search, hash } = useLocation()
+  return <Navigate to="/login" replace state={{ from: pathname + search + hash }} />
+}
+
+function returnPath(state: unknown): string | null {
+  const from = (state as { from?: unknown } | null)?.from
+  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//') || from.startsWith('/\\')) {
+    return null
+  }
+  return new URL(from, 'http://localhost').pathname === '/login' ? null : from
+}
+
+function LoginRoute({ user }: { user: CurrentUser | null }) {
+  const { state } = useLocation()
+  if (!user) {
+    return <LoginPage />
+  }
+  return <Navigate to={returnPath(state) ?? homePath(user)} replace />
+}
+
 // T#6 contract "화면과 라우팅" (D16, D25). Nothing protected is drawn until GET /api/auth/me has answered.
 function ManagerOnly({ user, children }: { user: CurrentUser | null; children: ReactNode }) {
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <ToLogin />
   }
   if (!isManager(user)) {
     return <Navigate to="/me" replace />
@@ -88,7 +111,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={homePath(user)} replace /> : <LoginPage />} />
+      <Route path="/login" element={<LoginRoute user={user} />} />
       <Route
         path="/"
         element={
@@ -182,7 +205,7 @@ function AppRoutes() {
           </ManagerOnly>
         }
       />
-      <Route path="/me" element={user ? <MePage /> : <Navigate to="/login" replace />} />
+      <Route path="/me" element={user ? <MePage /> : <ToLogin />} />
       <Route path="*" element={<Navigate to={user ? homePath(user) : '/login'} replace />} />
     </Routes>
   )
