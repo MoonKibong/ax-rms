@@ -473,11 +473,13 @@ describe('ProjectFormPage errors', () => {
       stubFetch({ save: answer })
       await renderAt('/projects/1/edit')
 
+      saveButton().focus() // T#58 criterion 5: a real click leaves the focus on the button; fireEvent.click does not
+      expect(saveButton()).toHaveFocus()
       await save()
 
       const alert = screen.getByRole('alert')
       expect(alert).toHaveTextContent(shown)
-      expect(['INPUT', 'SELECT']).not.toContain(document.activeElement?.tagName) // T#58 criterion 5: a form-level message moves no focus
+      expect(saveButton()).toHaveFocus() // a form-level message moves no focus
       expect(follows(alert, saveButton())).toBe(true)
       expect(follows(skillsGroup(), alert)).toBe(true)
       for (const field of [nameInput(), statusSelect(), periodGroup(), skillsGroup()]) {

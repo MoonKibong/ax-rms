@@ -441,10 +441,13 @@ describe('EmployeeFormPage errors', () => {
       stubFetch({ save: answer })
       await renderAt('/employees/new')
 
+      saveButton().focus() // T#58 criterion 5: a real click leaves the focus on the button; fireEvent.click does not
+      expect(saveButton()).toHaveFocus()
       await save()
 
       const alert = screen.getByRole('alert')
       expect(alert).toHaveTextContent(expected)
+      expect(saveButton()).toHaveFocus() // a form-level message moves no focus
       expect(alert.closest('form')).not.toBeNull()
       expect(alert.compareDocumentPosition(saveButton()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
