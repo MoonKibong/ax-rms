@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { apiFetch } from '../api/client'
 import type { EmployeeDetail as Detail, ProficiencyLevel } from '../api/employees'
 import type { ProjectStatus } from '../api/projects'
 import Badge from '../components/Badge'
@@ -39,7 +40,7 @@ const NONE = <span className="employee-detail__none">—</span>
 class LoadError extends Error {}
 
 async function loadDetail(url: string, signal: AbortSignal): Promise<Detail> {
-  const response = await fetch(url, { signal })
+  const response = await apiFetch(url, { signal })
   if (!response.ok) {
     // Read the error body too: an unread body keeps the request open in the browser. Its message is shown (D33).
     const body: unknown = await response.json().catch(() => null)

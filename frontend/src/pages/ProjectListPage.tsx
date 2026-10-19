@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import { PROJECT_STATUSES, type ProjectStatus, type ProjectSummary } from '../api/projects'
 import { AuthContext } from '../auth/AuthContext'
 import AppShell from '../components/AppShell'
@@ -63,7 +64,7 @@ function ProjectListPage() {
     const controller = new AbortController()
     setState({ phase: 'loading' })
     const url = status ? `/api/projects?status=${status}` : '/api/projects'
-    fetch(url, { signal: controller.signal })
+    apiFetch(url, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) {
           // Read the error body too: an unread body keeps the request open in the browser.

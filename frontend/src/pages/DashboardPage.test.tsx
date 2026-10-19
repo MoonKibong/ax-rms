@@ -241,7 +241,6 @@ describe('DashboardPage states', () => {
   it.each([
     ['a refused request', () => Promise.reject(new TypeError('Failed to fetch'))],
     ['a 500', () => reply(500, {})],
-    ['a 401', () => reply(401, { code: 'AUTH_REQUIRED', message: '로그인이 필요합니다.' })],
   ])('shows — in the tiles and an error in each list after %s; 다시 시도 asks once more', async (_name, fail) => {
     const answers = [fail, () => reply(200, FULL)]
     const fetchMock = stubFetch(() => (answers.shift() ?? never)())
