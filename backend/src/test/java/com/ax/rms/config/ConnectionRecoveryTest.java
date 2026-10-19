@@ -1,20 +1,24 @@
 package com.ax.rms.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.ax.rms.support.AbstractDatabaseTest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.sqlite.SQLiteErrorCode;
+import org.sqlite.SQLiteException;
 
 /**
  * BUSY로 트랜잭션 시작(`doBegin`)이 실패한 뒤, 그 커넥션이 풀에서 재사용돼도 다음 트랜잭션은 안전해야 한다
@@ -41,17 +45,32 @@ class ConnectionRecoveryTest extends AbstractDatabaseTest {
       url = probe.getMetaData().getURL();
     }
 
+    AtomicBoolean callbackRan = new AtomicBoolean(false);
+
     try (Connection locker = DriverManager.getConnection(url);
         Statement lockerStatement = locker.createStatement()) {
       lockerStatement.execute("BEGIN IMMEDIATE");
 
-      assertThatThrownBy(
+      Throwable thrown =
+          catchThrowable(
               () ->
                   tx.executeWithoutResult(
-                      status ->
-                          jdbcTemplate.update(
-                              "insert into department(name) values ('T54복구실패')")))
-          .isInstanceOf(Exception.class);
+                      status -> {
+                        callbackRan.set(true);
+                        jdbcTemplate.update(
+                            "insert into department(name) values ('T54복구실패')");
+                      }));
+
+      assertThat(thrown)
+          .as("BEGIN 실패는 트랜잭션 콜백 밖에서 난다")
+          .isInstanceOf(CannotCreateTransactionException.class);
+      assertThat(thrown.getCause())
+          .as("원인은 SQLiteException이어야 함")
+          .isInstanceOf(SQLiteException.class);
+      assertThat(((SQLiteException) thrown.getCause()).getResultCode())
+          .as("결과 코드는 SQLITE_BUSY여야 함")
+          .isEqualTo(SQLiteErrorCode.SQLITE_BUSY);
+      assertThat(callbackRan).as("BEGIN이 실패했으니 콜백(INSERT)은 실행되지 않아야 함").isFalse();
 
       lockerStatement.execute("ROLLBACK");
     }
