@@ -29,22 +29,48 @@ npx --prefix frontend playwright install chromium
 
 SQLite는 파일 하나로 동작하며 앱을 처음 실행할 때 비어 있는 파일이 만들어진다. 따로 준비할 것은 없다. 기본 위치는 `backend/data/app.db`이며 git에 포함되지 않는다(`.gitignore`).
 
+데모 시나리오의 날짜는 "오늘" 기준으로 심어지므로(D19), 시드를 넣은 날로부터 시간이 많이 지나면 §7 시나리오가
+깨질 수 있다(예: 40일 뒤 박소영 배치 종료). 시연 전에 `make reset-db`로 시연 DB를 지우면 다음 백엔드 실행이
+그 시점의 "오늘" 기준으로 다시 심는다:
+
+```
+make reset-db
+```
+
+지우는 대상은 `backend/data/app.db`와 그 `-wal`/`-shm`/`-journal` 파일뿐이다(e2e 전용 DB `backend/data/e2e.db`나
+`.nexi-tmp/*`는 건드리지 않는다). 백엔드가 이미 실행 중이면(기본 포트 `8080`이 사용 중이면) 거부되고 아무것도
+지워지지 않는다 — 먼저 백엔드를 멈춘 뒤 실행한다. 대상 경로·포트를 바꾸려면 `RESET_DB_PATH`/`BACKEND_PORT`
+환경변수를 쓴다(예: `RESET_DB_PATH=backend/data/app.db BACKEND_PORT=8080 make reset-db`).
+
 ## 실행 (로컬 데모)
 
-**백엔드** (포트를 `8080`으로 고정 — 프런트엔드가 이 주소로 호출한다):
+**한 줄로 (권장):**
+
+```
+make run
+```
+
+Node 버전(`.nvmrc`)이 설치된 버전과 다르거나 포트가 이미 쓰이고 있으면 그 자리에서 멈추고 안내만 하며(아무
+서버도 띄우지 않는다), 둘 다 괜찮으면 백엔드(포트 `8080`, `127.0.0.1`에만 열림)와 프런트엔드(포트 `5173`)를
+함께 띄운다. Ctrl-C 한 번으로 둘 다 내린다. 포트를 바꾸려면 `BACKEND_PORT`/`FRONTEND_PORT` 환경변수를 쓴다
+(예: `BACKEND_PORT=18080 FRONTEND_PORT=15173 make run`).
+
+**또는 따로 띄우려면(디버거를 하나만 붙이는 등):**
+
+백엔드(포트를 `8080`으로 고정 — 프런트엔드가 이 주소로 호출한다):
 
 ```
 scripts/nexi-isolated.sh --root "$PWD" --file DB_PATH=backend/data/app.db --set SERVER_PORT=8080 \
   -- ./backend/mvnw -f backend/pom.xml spring-boot:run
 ```
 
-**프런트엔드** (다른 터미널):
+프런트엔드(다른 터미널):
 
 ```
 npm --prefix frontend run dev
 ```
 
-브라우저에서 `http://localhost:5173`(Vite 기본 포트)을 열면 로그인 화면이 먼저 나온다. 아래 데모 계정으로 로그인하면 관리자 역할이 있는 계정은 `/`(지금은 디자인 참조 화면, 백엔드 `/api/health` 상태 표시)로, 직원 역할만 있는 계정은 `/me`(내 정보)로 간다. 개발 서버는 `/api`를 `http://localhost:8080`으로 proxy한다(`frontend/vite.config.ts`의 `server.proxy`), 그래서 브라우저에서 보는 주소는 그대로 `/api/...`다.
+브라우저에서 `http://localhost:5173`(Vite 기본 포트)을 열면 로그인 화면이 먼저 나온다. 아래 데모 계정으로 로그인하면 관리자 역할이 있는 계정은 `/`(지금은 디자인 참조 화면, 백엔드 `/api/health` 상태 표시)로, 직원 역할만 있는 계정은 `/me`(내 정보)로 간다. 개발 서버는 `/api`를 `http://localhost:8080`으로 proxy한다(`frontend/vite.config.ts`의 `server.proxy`), 그래서 브라우저에서 보는 주소는 그대로 `/api/...`다. 백엔드는 기본으로 `127.0.0.1`에만 열린다(`server.address`, `SERVER_ADDRESS` 환경변수로 바꿀 수 있다).
 
 ## 데모 계정 (D31)
 
