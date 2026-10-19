@@ -47,7 +47,8 @@ const FIELD_OF_CODE: Record<string, Field> = {
   PROJECT_SKILL_LINE_INVALID: 'skills',
 }
 
-type FormError = { field: Field | 'form'; message: string }
+// row: for a 인원 that is not a whole number, the row it is in; any other skills error is tied to the first row.
+type FormError = { field: Field | 'form'; message: string; row?: number }
 type SkillRow = {
   key: number
   jobTitle: string
@@ -104,6 +105,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
   const nextKey = useRef(0)
   const focusKey = useRef<number | null>(null)
   const skillsRef = useRef<HTMLFieldSetElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const periodErrorId = useId()
   const skillsErrorId = useId()
 
@@ -166,6 +168,14 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
     focusKey.current = null
   }, [values.skills])
 
+  // After a failed save the focus goes to the first input that says why, in screen order (T#58). A form-level message
+  // (role="alert") moves no focus.
+  useEffect(() => {
+    if (error && error.field !== 'form') {
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    }
+  }, [error])
+
   function set<K extends Exclude<keyof Values, 'skills'>>(key: K, value: Values[K]) {
     setValues((current) => ({ ...current, [key]: value }))
   }
@@ -197,8 +207,9 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
     }
     setError(null)
     const headcounts = values.skills.map((skill) => headcountOf(skill.headcount))
-    if (headcounts.some((headcount) => headcount === undefined)) {
-      setError({ field: 'skills', message: HEADCOUNT_NOT_WHOLE })
+    const badRow = headcounts.findIndex((headcount) => headcount === undefined)
+    if (badRow >= 0) {
+      setError({ field: 'skills', message: HEADCOUNT_NOT_WHOLE, row: badRow })
       return
     }
     const description = values.description.trim()
@@ -240,6 +251,12 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
   const errorFor = (field: Field) => (error?.field === field ? error.message : undefined)
   const periodError = errorFor('period')
   const skillsError = errorFor('skills')
+  // The input a skills message is tied to: the 인원 of the row that is not whole, else the first row's 직무.
+  const skillsTie = (index: number, input: 'jobTitle' | 'headcount') =>
+    skillsError && index === (error?.row ?? 0) && input === (error?.row === undefined ? 'jobTitle' : 'headcount')
+      ? { 'aria-invalid': true as const, 'aria-describedby': skillsErrorId }
+      : {}
+  const periodTie = periodError ? { 'aria-invalid': true as const, 'aria-describedby': periodErrorId } : {}
 
   let content
   if (state.phase === 'loading') {
@@ -253,7 +270,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
     content = <StateMessage kind="error" description={state.message} onRetry={() => setAttempt((count) => count + 1)} />
   } else {
     content = (
-      <form className="project-form" noValidate onSubmit={save}>
+      <form ref={formRef} className="project-form" noValidate onSubmit={save}>
         <TextField
           label="프로젝트명"
           required
@@ -264,7 +281,6 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
         <TextField label="설명" value={values.description} onChange={(event) => set('description', event.target.value)} />
         <fieldset
           className="project-form__group"
-          aria-invalid={periodError ? true : undefined}
           aria-describedby={periodError ? periodErrorId : undefined}
         >
           <legend className="project-form__legend">기간</legend>
@@ -273,6 +289,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
               label="시작일"
               required
               type="date"
+              {...periodTie}
               value={values.startDate}
               onChange={(event) => set('startDate', event.target.value)}
             />
@@ -280,6 +297,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
               label="종료일"
               required
               type="date"
+              {...periodTie}
               value={values.endDate}
               onChange={(event) => set('endDate', event.target.value)}
             />
@@ -302,7 +320,6 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
         <fieldset
           ref={skillsRef}
           className="project-form__group"
-          aria-invalid={skillsError ? true : undefined}
           aria-describedby={skillsError ? skillsErrorId : undefined}
         >
           <legend className="project-form__legend">필요 역량</legend>
@@ -317,6 +334,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
               >
                 <TextField
                   label="직무"
+                  {...skillsTie(index, 'jobTitle')}
                   value={skill.jobTitle}
                   onChange={(event) => updateSkill(skill.key, { jobTitle: event.target.value })}
                 />
@@ -337,6 +355,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
                   min={1}
                   step={1}
                   inputMode="numeric"
+                  {...skillsTie(index, 'headcount')}
                   value={skill.headcount}
                   onChange={(event) => updateSkill(skill.key, { headcount: event.target.value })}
                 />

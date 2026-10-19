@@ -102,6 +102,7 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
   const nextKey = useRef(0)
   const focusKey = useRef<number | null>(null)
   const skillsRef = useRef<HTMLFieldSetElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const skillsErrorId = useId()
 
   // The departments, and for an edit the employee too. A retry asks both again.
@@ -151,6 +152,14 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
     skillsRef.current?.querySelector<HTMLInputElement>(`[data-skill-key="${focusKey.current}"] input`)?.focus()
     focusKey.current = null
   }, [values.skills])
+
+  // After a failed save the focus goes to the first input that says why, in screen order (T#58). A form-level message
+  // (role="alert") moves no focus.
+  useEffect(() => {
+    if (error && error.field !== 'form') {
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    }
+  }, [error])
 
   function set<K extends Exclude<keyof Values, 'skills'>>(key: K, value: Values[K]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -234,7 +243,7 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
       ...state.departments.map((department) => ({ value: String(department.id), label: department.name })),
     ]
     content = (
-      <form className="employee-form" noValidate onSubmit={save}>
+      <form ref={formRef} className="employee-form" noValidate onSubmit={save}>
         <TextField
           label="이름"
           required
@@ -260,7 +269,6 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
         <fieldset
           ref={skillsRef}
           className="employee-form__skills"
-          aria-invalid={skillsError ? true : undefined}
           aria-describedby={skillsError ? skillsErrorId : undefined}
         >
           <legend className="employee-form__legend">기술</legend>
@@ -275,6 +283,7 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
               >
                 <TextField
                   label="기술 이름"
+                  {...(skillsError && index === 0 ? { 'aria-invalid': true as const, 'aria-describedby': skillsErrorId } : {})}
                   value={skill.skillName}
                   onChange={(event) => updateSkill(skill.key, { skillName: event.target.value })}
                 />

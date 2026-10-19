@@ -45,6 +45,7 @@ function firstDays(start: string, end: string): string {
   return new Date(Date.parse(`${start}T00:00:00Z`) + (MAX_PERIOD_DAYS - 1) * DAY_MS).toISOString().slice(0, 10)
 }
 
+const RELOAD_FAILED = '프로젝트를 다시 불러오지 못했습니다.'
 const PERCENT_RULE = '투입률은 5~100의 5 단위로 입력하세요.'
 
 type ProjectState = { phase: 'loading' } | { phase: 'error' } | { phase: 'missing' } | { phase: 'ready'; project: ProjectDetail }
@@ -74,6 +75,11 @@ function ProjectAssignPage({ id }: { id: number }) {
   // Raised after every save: project, candidates and the schedule are asked for again (D36).
   const [refresh, setRefresh] = useState(0)
   const hasProject = useRef(false)
+  // T#58: the project could not be asked for again after the page had one. The page and the form stay.
+  const [reloadFailed, setReloadFailed] = useState(false)
+  // Raised when a save or a check refuses an input; the focus then goes to the first input that says why.
+  const [focusAsk, setFocusAsk] = useState(0)
+  const pageRef = useRef<HTMLDivElement>(null)
 
   const [period, setPeriod] = useState<{ start: string; end: string } | null>(null)
   const [candidates, setCandidates] = useState<CandidatesState>({ phase: 'loading', rows: null })
@@ -120,13 +126,17 @@ function ProjectAssignPage({ id }: { id: number }) {
       .then((found) => {
         if (controller.signal.aborted) return
         hasProject.current = found !== null
+        setReloadFailed(false)
         setProjectState(found ? { phase: 'ready', project: found } : { phase: 'missing' })
       })
       .catch(() => {
-        if (!controller.signal.aborted) {
-          hasProject.current = false
-          setProjectState({ phase: 'error' })
+        if (controller.signal.aborted) return
+        if (hasProject.current) {
+          // The last project stays on the screen with its form; only the project can be asked for again.
+          setReloadFailed(true)
+          return
         }
+        setProjectState({ phase: 'error' })
       })
     return () => controller.abort()
   }, [id, projectAttempt, refresh])
@@ -145,6 +155,12 @@ function ProjectAssignPage({ id }: { id: number }) {
       })
     return () => controller.abort()
   }, [employeesAttempt])
+
+  useEffect(() => {
+    if (focusAsk > 0) {
+      pageRef.current?.querySelector<HTMLElement>('input[aria-invalid="true"]')?.focus()
+    }
+  }, [focusAsk])
 
   // A new period (or a save, or a retry) cancels the request before, and an answer that comes after that is ignored.
   useEffect(() => {
@@ -224,6 +240,7 @@ function ProjectAssignPage({ id }: { id: number }) {
       found.percent = PERCENT_RULE
     }
     setErrors(found)
+    if (found.period || found.percent) setFocusAsk((count) => count + 1)
     return percent === null || found.period ? null : { percent }
   }
 
@@ -266,6 +283,7 @@ function ProjectAssignPage({ id }: { id: number }) {
       return
     }
     setErrors({ [result.failure.spot]: result.failure.message })
+    if (result.failure.spot !== 'form') setFocusAsk((count) => count + 1)
   }
 
   let content
@@ -326,6 +344,17 @@ function ProjectAssignPage({ id }: { id: number }) {
 
     content = (
       <>
+        {reloadFailed ? (
+          <div className="assign__reload">
+            <p className="field__error" role="alert">
+              <WarningIcon size={16} />
+              {RELOAD_FAILED}
+            </p>
+            <Button variant="secondary" onClick={() => setProjectAttempt((count) => count + 1)}>
+              다시 불러오기
+            </Button>
+          </div>
+        ) : null}
         <div className="assign__summary">
           <h1 className="page__title">{shown.name}</h1>
           <p className="assign__period">
@@ -463,7 +492,7 @@ function ProjectAssignPage({ id }: { id: number }) {
 
   return (
     <AppShell current="projects">
-      <div className="assign" aria-busy={projectState.phase === 'loading' ? true : undefined}>
+      <div ref={pageRef} className="assign" aria-busy={projectState.phase === 'loading' ? true : undefined}>
         {content}
       </div>
     </AppShell>
