@@ -1,3 +1,4 @@
+import { apiFetch } from './client'
 import { SAVE_FAILED, readFailure, type ApiFailure, type AvailabilityStatus } from './employees'
 
 // T#17: the assignment API (T#10). The screen shows these values as they come (D36); it computes no availability.
@@ -52,7 +53,7 @@ export type SendResult = { ok: true } | { ok: false; failure: PlacedFailure }
 // POST, PATCH or DELETE of the assignment API. A network error or an answer the screen cannot place is a "form" failure.
 export async function sendAssignment(method: 'POST' | 'PATCH' | 'DELETE', url: string, body?: unknown): Promise<SendResult> {
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method,
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),

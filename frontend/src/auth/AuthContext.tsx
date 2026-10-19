@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { setSessionExpiredHandler, startNewSession } from '../api/client'
 
 // T#6: who is logged in. The server session (cookie) is the source of truth; the app asks GET /api/auth/me
 // when it opens and keeps the answer here.
@@ -65,7 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [attempt])
 
+  // T#55: a business request answered 401, so the session has ended. The user is forgotten, and the routes send the
+  // browser to /login with the address it was on.
+  useEffect(() => {
+    setSessionExpiredHandler(() => setUser(null))
+    return () => setSessionExpiredHandler(null)
+  }, [])
+
   const signIn = useCallback((current: CurrentUser) => {
+    startNewSession()
     setUser(current)
     setStatus('ready')
   }, [])

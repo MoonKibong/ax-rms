@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import { sendAssignment, type AssignmentCreate, type AssignmentModify, type Candidate, type FailureSpot } from '../api/assignments'
 import type { EmployeeDetail, EmployeeListItem } from '../api/employees'
 import type { AssignedEmployee, ProjectDetail, ProjectStatus } from '../api/projects'
@@ -52,7 +53,7 @@ type Editing = { assignmentId: number; employeeId: number; employeeName: string;
 type Errors = Partial<Record<FailureSpot, string>>
 
 async function getJson<T>(url: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(url, { signal })
+  const response = await apiFetch(url, { signal })
   if (!response.ok) {
     // Read the error body too: an unread body keeps the request open in the browser.
     await response.text().catch(() => '')
@@ -104,7 +105,7 @@ function ProjectAssignPage({ id }: { id: number }) {
     if (!hasProject.current) {
       setProjectState({ phase: 'loading' })
     }
-    fetch(`/api/projects/${id}`, { signal: controller.signal })
+    apiFetch(`/api/projects/${id}`, { signal: controller.signal })
       .then(async (response) => {
         if (response.status === 404) {
           await response.text().catch(() => '')

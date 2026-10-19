@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import type { Department } from '../api/departments'
 import {
   SAVE_FAILED,
@@ -57,7 +58,7 @@ const EMPTY: Values = { name: '', departmentId: '', jobTitle: '', careerYears: '
 class LoadError extends Error {}
 
 async function load<T>(url: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(url, { signal })
+  const response = await apiFetch(url, { signal })
   if (!response.ok) {
     throw new LoadError((await readFailure(response)).message)
   }
@@ -193,7 +194,7 @@ function EmployeeFormPage({ mode }: { mode: 'new' | 'edit' }) {
     inFlight.current = true
     setSaving(true)
     try {
-      const response = await fetch(mode === 'new' ? '/api/employees' : `/api/employees/${id}`, {
+      const response = await apiFetch(mode === 'new' ? '/api/employees' : `/api/employees/${id}`, {
         method: mode === 'new' ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

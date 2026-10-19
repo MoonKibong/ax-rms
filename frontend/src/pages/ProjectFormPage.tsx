@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { apiFetch } from '../api/client'
 import { SAVE_FAILED, readFailure, type ApiFailure } from '../api/employees'
 import type { ProficiencyLevel, ProjectDetail, ProjectStatus, ProjectUpsert } from '../api/projects'
 import AppShell from '../components/AppShell'
@@ -113,7 +114,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
     }
     const controller = new AbortController()
     setState({ phase: 'loading' })
-    fetch(`/api/projects/${id}`, { signal: controller.signal })
+    apiFetch(`/api/projects/${id}`, { signal: controller.signal })
       .then(async (response): Promise<Loaded> => {
         if (!response.ok) {
           const failure = await readFailure(response)
@@ -217,7 +218,7 @@ function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
     inFlight.current = true
     setSaving(true)
     try {
-      const response = await fetch(mode === 'new' ? '/api/projects' : `/api/projects/${id}`, {
+      const response = await apiFetch(mode === 'new' ? '/api/projects' : `/api/projects/${id}`, {
         method: mode === 'new' ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
