@@ -68,4 +68,21 @@ describe('SelectField', () => {
     expect(select).not.toBeRequired()
     expect(screen.queryByText('*')).not.toBeInTheDocument()
   })
+
+  // T#58 criterion 1: the caller's aria-* are merged with the field's own, not overwritten.
+  it('merges the caller aria-describedby with its own message id and keeps the caller aria-invalid', () => {
+    const { rerender } = render(
+      <SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} aria-describedby="x" error="고르세요" />,
+    )
+
+    const message = screen.getByText('고르세요')
+    expect(screen.getByRole('combobox', { name: '부서' }).getAttribute('aria-describedby')).toBe(`x ${message.id}`)
+
+    rerender(<SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} aria-describedby="x" />)
+    expect(screen.getByRole('combobox', { name: '부서' }).getAttribute('aria-describedby')).toBe('x')
+    expect(screen.getByRole('combobox', { name: '부서' })).not.toHaveAttribute('aria-invalid')
+
+    rerender(<SelectField label="부서" options={OPTIONS} value="" onChange={() => undefined} aria-invalid />)
+    expect(screen.getByRole('combobox', { name: '부서' })).toHaveAttribute('aria-invalid', 'true')
+  })
 })
