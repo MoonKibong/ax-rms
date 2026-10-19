@@ -21,7 +21,9 @@ test('a session that ended while the app was open: the next screen goes to /logi
   expect(pathOf(page)).toBe('/')
 
   await page.context().clearCookies()
+  const answered = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/employees')
   await page.locator('nav').getByRole('link', { name: '직원', exact: true }).click()
+  expect((await answered).status()).toBe(401)
   await page.waitForLoadState('networkidle')
   await settle(page)
   expect(pathOf(page)).toBe('/login')
